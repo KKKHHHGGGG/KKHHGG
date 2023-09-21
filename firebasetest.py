@@ -126,7 +126,7 @@ class Listener:
             rospy.loginfo("Received data from First_order: %s", self.first_order_data)
             if self.first_order_data in ["101_go", "102_go", "201_go", "202_go"]:
                 
-                self.pub.publish("go")
+                self.pub.publish(self.first_order_data)
 
             # Read data from Second_order only when first_order_data is "Next"
             elif self.first_order_data == "Next":
@@ -134,10 +134,10 @@ class Listener:
                 self.second_order_data = order.child('Second_order').get() 
                 if self.second_order_data in ["101_go", "102_go", "201_go", "202_go"]:
                     rospy.loginfo("Received data from Second_order: %s", self.second_order_data)
-                    self.pub.publish("go")
+                    self.pub.publish(self.second_order_data)
                 elif self.second_order_data in ["101_arrive", "102_arrive", "201_arrive", "202_arrive"]:
                     rospy.loginfo("Received data from Second_order: %s", self.second_order_data)
-                    self.pub.publish("arrive")
+                    self.pub.publish(self.second_order_data)
                     
             if self.first_order_data == "Next" and self.second_order_data == "Next":
                 rospy.loginfo("home")
@@ -145,7 +145,7 @@ class Listener:
                     
         elif self.first_order_data in ["101_arrive", "102_arrive", "201_arrive", "202_arrive"]:
             rospy.loginfo("Received data from First_order: %s", self.first_order_data)
-            self.pub.publish("arrive")
+            self.pub.publish(self.first_order_data)
             
 
         # Read data from Second_order
