@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# 모듈
 import rospy
 from std_msgs.msg import String
 import signal
@@ -13,6 +14,7 @@ from firebase_admin import credentials
 from firebase_admin import db
 from collections import deque
 
+# 종료문구
 def signal_handler(sig, frame):
     print("Exiting...")
     sys.exit(0)
@@ -23,14 +25,16 @@ class Listener:
 
     
     def __init__(self):
+        # ros토픽 생성
         rospy.init_node('rosFirebase', anonymous=True)
         rospy.Subscriber("ros_to_firebase", String, callback=self.callback)
         self.pub = rospy.Publisher("firebase_to_ros", String, queue_size=1000)
+        # 파이어베이스 j.son경로 및 url
         self.credentials_path = credentials_path
         self.database_url = database_url
         self.data_queue = deque()
         
-        # Key Certification
+        # Certification 키
         self.cred = credentials.Certificate(credentials_path)
 
         firebase_admin.initialize_app(self.cred, {
@@ -38,25 +42,31 @@ class Listener:
         })
         self.hehe = None  # 변수 초기화
         self.first_order_received = True  # 변수 초기화
-        
+    
+    # subscriber 및 파이어베이스 업데이트    
     def callback(self, message):
+        # 경로 참조
         ref = db.reference('')
         Order_reb = db.reference('Order')
         firstorder_ref = Order_reb.child('First_order')
         secondorder_ref = Order_reb.child('Second_order')
+        # 호텔 경로
         if message.data in ["Hotel_Mode", "Other_Mode", "None"]:
             module_data = {"Module_Mode": message.data }
             ref.child('module').set(module_data)
+        # 미세먼지 경로
         elif message.data in ["GOOD", "NORMAL", "BAD", "VERY BAD"]:
             dust_data = {"Dust_State": message.data}
             ref.child('dust').set(dust_data)
+        # 서랍 경로 및 주행 상호작용
         elif message.data in ["Unlock1_done", "Unlock2_done", "Lock1_done", "Lock2_done"]:
             cabinet_data = {"Cabinet": message.data}
             ref.update(cabinet_data)
             if message.data in ["Lock1_done", "Lock2_done"]:
                 next = "Next"
-                first_data = firstorder_ref.get()
-                second_data = secondorder_ref.get()  
+                first_data = firstorder_ref.get() # 변수에 데이터 저장 
+                second_data = secondorder_ref.get() # 변수에 데이터 저장 
+                # order경로의 두 번째 인덱스 추출
                 first_order_state = first_data.split('_')[1] if len(first_data.split('_')) > 1 else None
                 second_order_state = second_data.split('_')[1] if len(second_data.split('_')) > 1 else None
                 if first_order_state == "arrive":
@@ -71,10 +81,10 @@ class Listener:
                     ref.update(cabinet_data)
                     
         elif message.data in ["101_arrive", "102_arrive", "201_arrive", "202_arrive"]:
-            # Extract the number from the arrive message
-            number_cur = int(message.data.split('_')[0])
-            first_data = firstorder_ref.get()
-            second_data = secondorder_ref.get()
+            
+            number_cur = int(message.data.split('_')[0])# 첫 번째 인덱스 추출
+            first_data = firstorder_ref.get() # 변수에 데이터 저장 
+            second_data = secondorder_ref.get() # 변수에 데이터 저장 
             self.pub.publish("drive_done")
 
             if first_data in ["101_go", "102_go", "201_go", "202_go"]:
@@ -94,21 +104,23 @@ class Listener:
             ref.child('Order').child('hihi').set(message.data)
 
 
-            
+    # 서랍 경로 데이터 확인 및 publish
     def cabinet(self):
         cabinet = db.reference('Cabinet')
         self.cabinet_data = cabinet.get()  # 변수에 데이터 저장     
         if self.cabinet_data in ["First_Open", "First_Close", "Second_Open", "Second_Close"]:
             rospy.loginfo("Received data from cabinet: %s", self.cabinet_data)
             self.pub.publish(self.cabinet_data)
-            
+      
+    # 모듈 경로 데이터 확인 및 publish        
     def Module(self):
         module = db.reference('module')
-        self.module_mode = module.child('Module_Mode').get()
-        if self.module_mode == "Hotel_Mode":
+        self.module_mode = module.child('Module_Mode').get() # 변수에 데이터 저장 
+        if self.module_mode in ["Hotel_Mode", "Open"]:
             rospy.loginfo("Received data from Module: %s", self.module_mode)
             self.pub.publish(self.module_mode)    
-            
+    
+    # 미세먼지 경로 데이터 확인 및 publish        
     def Dust(self):
         Dust = db.reference('dust')
         self.Dust_data = Dust.child('Dust_State').get()  # 변수에 데이터 저장     
@@ -116,19 +128,21 @@ class Listener:
             rospy.loginfo("Received data from Dust: %s", self.Dust_data)
             self.pub.publish(self.Dust_data)
     
+    # 서랍 경로 데이터 확인 및 publish
     def drive_order(self):
         order = db.reference('Order')  
            
         self.first_order_data = order.child('First_order').get()       
         self.second_order_data = None       
-                 
+         
+        # first_order우선 publish        
         if self.first_order_data in ["101_go", "102_go", "201_go", "202_go", "Next"]:
             rospy.loginfo("Received data from First_order: %s", self.first_order_data)
             if self.first_order_data in ["101_go", "102_go", "201_go", "202_go"]:
                 
                 self.pub.publish(self.first_order_data)
 
-            # Read data from Second_order only when first_order_data is "Next"
+            
             elif self.first_order_data == "Next":
                 
                 self.second_order_data = order.child('Second_order').get() 
@@ -147,10 +161,9 @@ class Listener:
             rospy.loginfo("Received data from First_order: %s", self.first_order_data)
             self.pub.publish(self.first_order_data)
             
-
-        # Read data from Second_order
+    # 데이터 값이 변할 때마다 호출되는 콜백 함수
     def cabinet_on_data_change(self, event):
-        # 데이터 값이 변할 때마다 호출되는 콜백 함수
+        
         self.cabinet()
         
     def module_on_data_change(self, event):
@@ -168,9 +181,9 @@ class Listener:
     def listener(self):
         # 파이어베이스 경로에 대한 이벤트 리스너 등록
         order_ref = db.reference('Order')  # 'Order' 경로 참조
-        dust_ref = db.reference('dust')
-        cabinet_ref = db.reference('Cabinet')
-        module_ref = db.reference('module')  
+        dust_ref = db.reference('dust') # 'dust' 경로 참조
+        cabinet_ref = db.reference('Cabinet')   # 'Cabinet' 경로 참조
+        module_ref = db.reference('module')  # 'module' 경로 참조
 
 # 특정 child 경로들에 대한 참조
         first_order_ref = order_ref.child('First_order')
@@ -187,10 +200,11 @@ class Listener:
     
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal_handler)
-
+    #경로 지정
     credentials_path = 'test/fir-test3-62959-firebase-adminsdk-pdaz3-a3e74cabd0.json'
     database_url = 'https://fir-test3-62959-default-rtdb.firebaseio.com/'
     try:
+        #firebase라이브러리 경로 출력
         print(firebase_admin)
         listener = Listener()
         listener.listener()
