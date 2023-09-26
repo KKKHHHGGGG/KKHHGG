@@ -79,7 +79,8 @@ class Listener:
                     Order_reb.child('Second_order').set(next)
                     cabinet_data = {"Cabinet": "STANBY"}
                     ref.update(cabinet_data)
-                    
+        
+        #호수 위치 도착            
         elif message.data in ["101_arrive", "102_arrive", "201_arrive", "202_arrive"]:
             
             number_cur = int(message.data.split('_')[0])# 첫 번째 인덱스 추출
@@ -98,6 +99,14 @@ class Listener:
                 if number_cur == second_number_prev:
                     
                     secondorder_ref.set(message.data)
+        
+        # home도착시
+        elif message.data == "home_arrive":
+            sleep(1)
+            firstorder_ref.set(message.data)
+            secondorder_ref.set(message.data)
+            
+        
         else:
             data = {"Order": message.data}
             rospy.loginfo("Received data from Firebase: %s", data)
@@ -108,7 +117,7 @@ class Listener:
     def cabinet(self):
         cabinet = db.reference('Cabinet')
         self.cabinet_data = cabinet.get()  # 변수에 데이터 저장     
-        if self.cabinet_data in ["First_Open", "First_Close", "Second_Open", "Second_Close"]:
+        if self.cabinet_data in ["First_Open", "First_Close", "Second_Open", "Second_Close", "STANBY"]:
             rospy.loginfo("Received data from cabinet: %s", self.cabinet_data)
             self.pub.publish(self.cabinet_data)
       
