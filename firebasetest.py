@@ -52,8 +52,14 @@ class Listener:
         secondorder_ref = Order_reb.child('Second_order')
         # 호텔 경로
         if message.data in ["Hotel_Mode", "Other_Mode", "None"]:
-            module_data = {"Module_Mode": message.data }
-            ref.child('module').set(module_data)
+            if message.data in ["Hotel_Mode", "Other_Mode"]:
+                
+                module_data = {"Module_Mode": message.data }
+                ref.child('module').set(module_data)
+            elif message.data == "None":
+                
+                module_data = {"Module_Mode":"None"}
+                ref.child('module').set(module_data) 
         # 미세먼지 경로
         elif message.data in ["GOOD", "NORMAL", "BAD", "VERY BAD"]:
             dust_data = {"Dust_State": message.data}
