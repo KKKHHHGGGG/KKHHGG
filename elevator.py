@@ -83,7 +83,7 @@ def callback(data):
         time.sleep(3)
         open()
         floor_state.publish("second_open_out")
-        time.sleep(5)
+        time.sleep(13)
         close()
 
     if data.data == "2F_open":
@@ -100,7 +100,7 @@ def callback(data):
         time.sleep(3)
         open()
         floor_state.publish("first_open_out")
-        time.sleep(5)
+        time.sleep(13)
         close()
 
 def dc_motor():
