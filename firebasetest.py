@@ -168,7 +168,7 @@ class Listener:
                     rospy.loginfo("Received data from Second_order: %s", self.second_order_data)
                     self.pub.publish(self.second_order_data)
                     
-            if self.first_order_data == "Next" and self.second_order_data == "Next":
+            if self.first_order_data == "Next" and (self.second_order_data == "Next" or self.second_order_data == "home_arrive"):# changepart
                 rospy.loginfo("home")
                 self.pub.publish("home")                    
                     
