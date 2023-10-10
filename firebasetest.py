@@ -76,12 +76,12 @@ class Listener:
                 first_order_state = first_data.split('_')[1] if len(first_data.split('_')) > 1 else None
                 second_order_state = second_data.split('_')[1] if len(second_data.split('_')) > 1 else None
                 if first_order_state == "arrive":
-                    sleep(3)
+                    sleep(0.5)
                     Order_reb.child('First_order').set(next)
                     cabinet_data = {"Cabinet": "STANBY"}
                     ref.update(cabinet_data)
                 if second_order_state == "arrive":
-                    sleep(3)
+                    sleep(0.5)
                     Order_reb.child('Second_order').set(next)
                     cabinet_data = {"Cabinet": "STANBY"}
                     ref.update(cabinet_data)
@@ -111,6 +111,8 @@ class Listener:
             sleep(1)
             firstorder_ref.set(message.data)
             secondorder_ref.set(message.data)
+            cabinet_data = {"Cabinet": "STANBY"}
+            ref.update(cabinet_data)
             
         
         else:
@@ -154,7 +156,7 @@ class Listener:
         if self.first_order_data in ["101_go", "102_go", "201_go", "202_go", "Next"]:
             rospy.loginfo("Received data from First_order: %s", self.first_order_data)
             if self.first_order_data in ["101_go", "102_go", "201_go", "202_go"]:
-                
+                sleep(1)
                 self.pub.publish(self.first_order_data)
 
             
@@ -163,12 +165,14 @@ class Listener:
                 self.second_order_data = order.child('Second_order').get() 
                 if self.second_order_data in ["101_go", "102_go", "201_go", "202_go"]:
                     rospy.loginfo("Received data from Second_order: %s", self.second_order_data)
+                    sleep(1)
                     self.pub.publish(self.second_order_data)
                 elif self.second_order_data in ["101_arrive", "102_arrive", "201_arrive", "202_arrive"]:
                     rospy.loginfo("Received data from Second_order: %s", self.second_order_data)
+                    sleep(1)
                     self.pub.publish(self.second_order_data)
                     
-            if self.first_order_data == "Next" and (self.second_order_data == "Next" or self.second_order_data == "home_arrive"):# changepart
+            if self.first_order_data == "Next" and (self.second_order_data == "Next" or self.second_order_data == "home_arrive"):
                 rospy.loginfo("home")
                 self.pub.publish("home")                    
                     
@@ -216,8 +220,8 @@ class Listener:
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal_handler)
     #경로 지정
-    credentials_path = 'test/fir-test3-62959-firebase-adminsdk-pdaz3-a3e74cabd0.json'
-    database_url = 'https://fir-test3-62959-default-rtdb.firebaseio.com/'
+    credentials_path = 'mca-test-e270e-firebase-adminsdk-wthsv-e5ef79fec3.json'
+    database_url = 'https://mca-test-e270e-default-rtdb.firebaseio.com/'
     try:
         #firebase라이브러리 경로 출력
         print(firebase_admin)
@@ -225,4 +229,3 @@ if __name__ == '__main__':
         listener.listener()
     except rospy.ROSInterruptException:
         pass
-
