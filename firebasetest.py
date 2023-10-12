@@ -62,8 +62,8 @@ class Listener:
                 ref.child('module').set(module_data) 
         # 미세먼지 경로
         elif message.data in ["GOOD", "NORMAL", "BAD", "VERY BAD"]:
-            dust_data = {"Dust_State": message.data}
-            ref.child('dust').set(dust_data)
+            dust_data = {"dust": message.data}
+            ref.set(dust_data)
         # 서랍 경로 및 주행 상호작용
         elif message.data in ["Unlock1_done", "Unlock2_done", "Lock1_done", "Lock2_done"]:
             cabinet_data = {"Cabinet": message.data}
@@ -140,7 +140,7 @@ class Listener:
     # 미세먼지 경로 데이터 확인 및 publish        
     def Dust(self):
         Dust = db.reference('dust')
-        self.Dust_data = Dust.child('Dust_State').get()  # 변수에 데이터 저장     
+        self.Dust_data = Dust.get()  # 변수에 데이터 저장     
         if self.Dust_data in ["Dust_ON", "Dust_OFF"]:
             rospy.loginfo("Received data from Dust: %s", self.Dust_data)
             self.pub.publish(self.Dust_data)
