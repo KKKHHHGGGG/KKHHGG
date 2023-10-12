@@ -34,7 +34,7 @@ def open():
     pwm.ChangeDutyCycle(100)
     GPIO.output(motor_pin1, GPIO.HIGH)
     GPIO.output(motor_pin2, GPIO.LOW)
-    time.sleep(5)
+    time.sleep(7.5)
     motor_stop()
 
 # Set the motor to run counterclockwise
@@ -42,7 +42,7 @@ def close():
     pwm.ChangeDutyCycle(100)
     GPIO.output(motor_pin1, GPIO.LOW)
     GPIO.output(motor_pin2, GPIO.HIGH)
-    time.sleep(5)
+    time.sleep(7.5)
     motor_stop()
 
 # Stop the motor
