@@ -63,7 +63,7 @@ class Listener:
         # 미세먼지 경로
         elif message.data in ["GOOD", "NORMAL", "BAD", "VERY BAD"]:
             dust_data = {"dust": message.data}
-            ref.set(dust_data)
+            ref.update(dust_data)
         # 서랍 경로 및 주행 상호작용
         elif message.data in ["Unlock1_done", "Unlock2_done", "Lock1_done", "Lock2_done"]:
             cabinet_data = {"Cabinet": message.data}
