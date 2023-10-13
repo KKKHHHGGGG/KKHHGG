@@ -61,7 +61,8 @@ public:
                 if (distance1 == distance2){
                     if (distance1 > 12.5 && distance2 > 12.5) {
                         cmd_vel.linear.x = 0.06;
-                        pubCmdvel.publish(cmd_vel);                    
+                        pubCmdvel.publish(cmd_vel); 
+                        ROS_INFO("FORWARD");
                     }else if (distance1 < 12.5 && distance2 < 12.5) {
                         cmd_vel.linear.x = 0.00;
                         pubCmdvel.publish(cmd_vel);
@@ -73,10 +74,12 @@ public:
                         cmd_vel.angular.z = -0.05;
                         delay(10);
                         pubCmdvel.publish(cmd_vel);
+                        ROS_INFO("distance1>distance2: turn LEFT");
                     } else if (distance1 < distance2) {
                         cmd_vel.angular.z = 0.05;
                         delay(10);
                         pubCmdvel.publish(cmd_vel);
+                        ROS_INFO("distance1<distance2: turn RIGHT");
                     }
                 } 
 
