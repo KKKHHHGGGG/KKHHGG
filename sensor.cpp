@@ -30,7 +30,7 @@ public:
     // 초음파 작동 //
     void ultra_move(string direction) {
 
-        int start_time, end_time;
+        int start_time, end_time, start_time1, end_time1;
         float distance1, distance2;
 
         while (ros::ok())
@@ -46,26 +46,40 @@ public:
 
             while (digitalRead(Echo) == 0 && digitalRead(Echo1) == 0);
             start_time = micros();
+            start_time1 = micros();
 
             while (digitalRead(Echo) == 1 && digitalRead(Echo1) == 1);
             end_time = micros();
+            end_time1 = micros();
 
             distance1 = (end_time - start_time) / 29. / 2.;
-            distance2 = (end_time - start_time) / 29. / 2.;  // Assuming distance2 is obtained from the second ultrasonic sensor
+            distance2 = (end_time1 - start_time1) / 29. / 2.;  // Assuming distance2 is obtained from the second ultrasonic sensor
 
             cout << "[INFO] Distance 1: " << distance1 << " cm, Distance 2: " << distance2 << " cm" << endl;
 
             if (direction == "forward") {
-                if (distance1 > 12.5 && distance2 > 12.5) {
-                    cmd_vel.linear.x = 0.06;
-                    pubCmdvel.publish(cmd_vel);
-                }
-                else {
-                    cmd_vel.linear.x = 0.00;
-                    pubCmdvel.publish(cmd_vel);
-                    ROS_INFO("STOP");
-                    break;
-                }
+                if (distance1 == distance2){
+                    if (distance1 > 12.5 && distance2 > 12.5) {
+                        cmd_vel.linear.x = 0.06;
+                        pubCmdvel.publish(cmd_vel);                    
+                    }else if (distance1 < 12.5 && distance2 < 12.5) {
+                        cmd_vel.linear.x = 0.00;
+                        pubCmdvel.publish(cmd_vel);
+                        ROS_INFO("STOP");
+                        break;
+                    }
+                }else {
+                    else if (distance1 > distance2) {
+                        cmd_vel.angular.z = -0.05;
+                        delay(10);
+                        pubCmdvel.publish(cmd_vel);
+                    } else if (distance1 < distance2) {
+                        cmd_vel.angular.z = 0.05;
+                        delay(10);
+                        pubCmdvel.publish(cmd_vel);
+                    }
+                } 
+
             }
         }
     }
@@ -202,3 +216,4 @@ int main(int argc, char**argv){
 
     return 0;
 }
+
