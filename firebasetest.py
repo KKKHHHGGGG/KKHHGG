@@ -50,6 +50,7 @@ class Listener:
         Order_reb = db.reference('Order')
         firstorder_ref = Order_reb.child('First_order')
         secondorder_ref = Order_reb.child('Second_order')
+        # cabinet_ref = db.reference('Cabinet')
         # 호텔 경로
         if message.data in ["Hotel_Mode", "Other_Mode", "None"]:
             if message.data in ["Hotel_Mode", "Other_Mode"]:
@@ -85,6 +86,9 @@ class Listener:
                     Order_reb.child('Second_order').set(next)
                     cabinet_data = {"Cabinet": "STANBY"}
                     ref.update(cabinet_data)
+            # if message.data in ["Unlock1_done", "Unlock2_done"]:
+            #     cabinet_REF = cabinet_ref.get()
+            #     if
         
         #호수 위치 도착            
         elif message.data in ["101_arrive", "102_arrive", "201_arrive", "202_arrive"]:
@@ -107,7 +111,7 @@ class Listener:
                     secondorder_ref.set(message.data)
         
         # home도착시
-        elif message.data == "home_arrive":
+        elif message.data == "home_ARRIVE":
             sleep(1)
             firstorder_ref.set(message.data)
             secondorder_ref.set(message.data)
@@ -128,6 +132,7 @@ class Listener:
         if self.cabinet_data in ["First_Open", "First_Close", "Second_Open", "Second_Close", "STANBY"]:
             rospy.loginfo("Received data from cabinet: %s", self.cabinet_data)
             self.pub.publish(self.cabinet_data)
+
       
     # 모듈 경로 데이터 확인 및 publish        
     def Module(self):
@@ -172,7 +177,7 @@ class Listener:
                     sleep(1)
                     self.pub.publish(self.second_order_data)
                     
-            if self.first_order_data == "Next" and (self.second_order_data == "Next" or self.second_order_data == "home_arrive"):
+            if self.first_order_data == "Next" and (self.second_order_data == "Next" or self.second_order_data == "home_ARRIVE"):
                 rospy.loginfo("home")
                 self.pub.publish("home")                    
                     
@@ -229,3 +234,4 @@ if __name__ == '__main__':
         listener.listener()
     except rospy.ROSInterruptException:
         pass
+
