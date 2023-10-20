@@ -95,6 +95,19 @@ void callback(const std_msgs::Int32& msg) {
       strip.fill(strip.Color(0, 0, 0, 20));
       strip.show();
       break;
+    case 10:
+      strip.clear();
+      strip.show();
+      delay(500);
+      strip.fill(strip.Color(0, 0, 0, 20));
+      strip.show();
+      delay(500);
+      strip.clear();
+      strip.show();
+      delay(500);
+      strip.fill(strip.Color(0, 0, 0, 20));
+      strip.show();
+      break;
   }
 }
 
