@@ -196,6 +196,10 @@ class Listener:
         elif self.first_order_data in ["101_arrive", "102_arrive", "201_arrive", "202_arrive"]:
             rospy.loginfo("Received data from First_order: %s", self.first_order_data)
             self.pub.publish(self.first_order_data)
+
+        elif self.first_order_data == "home_ARRIVE":
+            rospy.loginfo("Received data from First_order: %s", self.first_order_data)
+            self.pub.publish(self.first_order_data)
             
     # 데이터 값이 변할 때마다 호출되는 콜백 함수
     def cabinet_on_data_change(self, event):
