@@ -124,6 +124,7 @@ class Listener:
 
     # 서랍 경로 데이터 확인 및 publish
     def cabinet(self):
+        ref = db.reference('')
         cabinet = db.reference('Cabinet')
         self.cabinet_data = cabinet.get()  # 변수에 데이터 저장     
         if self.cabinet_data in ["First_Open", "Second_Open", "STANBY"]:
@@ -148,8 +149,8 @@ class Listener:
                 if self.cabinet_data == "Unlock2_done":
                     time.sleep(0.1)
                     self.pub.publish("Second_Close")
-                    cabinet_data = {"Cabinet": "Second_Close"}
-                    cabinet.update(cabinet_data)
+                    ref = {"Cabinet": "Second_Close"}
+                    ref.update(cabinet_data)
                     
     # 모듈 경로 데이터 확인 및 publish        
     def Module(self):
