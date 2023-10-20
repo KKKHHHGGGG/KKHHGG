@@ -127,22 +127,16 @@ void setup() {
   delay(1000);
 }
 
-void loop() {
-  
-  int magnetic_sensorValue1 = digitalRead(magnetic_sensorPin1);
-  int magnetic_sensorValue2 = digitalRead(magnetic_sensorPin2);
-  int magnetic_sensorValue3 = digitalRead(magnetic_sensorPin3);
-  int magnetic_sensorValue4 = digitalRead(magnetic_sensorPin4);
-
-  
-    
+void dust() {
+  uint8_t ret = pm2008_i2c.read();
+  int pm1_um = pm2008_i2c.number_of_1_um;  
   if (fan_state == Fan_ON) {
     uint32_t currentTime = millis();  // 미세먼지 센서를 10초마다 측정
     if (currentTime - lastMeasurementTime >= 10000) {
-      uint8_t ret = pm2008_i2c.read();
+      
       lastMeasurementTime = currentTime;  // 현재 시간으로 업데이트
       if (ret == 0) {
-        int pm1_um = pm2008_i2c.number_of_1_um;
+        
         int motorSpeed = 0;  // motorSpeed를 여기로 이동
 
         if (pm1_um >= 0 && pm1_um < GOOD_THRESHOLD) {
@@ -167,6 +161,17 @@ void loop() {
     int motorSpeed = 0;  // motorSpeed를 여기로 이동
     motorfan.drive(motorSpeed);  // motorSpeed를 설정 후 모터 구동
   }
+}
+
+void loop() {
+  dust();
+  int magnetic_sensorValue1 = digitalRead(magnetic_sensorPin1);
+  int magnetic_sensorValue2 = digitalRead(magnetic_sensorPin2);
+  int magnetic_sensorValue3 = digitalRead(magnetic_sensorPin3);
+  int magnetic_sensorValue4 = digitalRead(magnetic_sensorPin4);
+
+  
+    
 
 
   // 다른 작업 수행
@@ -224,13 +229,12 @@ void loop() {
       state_msg.data = "Lock1_done";  
       strip.fill(strip.Color(50, 0, 0, 0));
       strip.show();
-      delay(3000);
+      State.publish(&state_msg); // state_msg 퍼블리시
+      delay(2000);
       strip.clear();
       strip.show();
 
       Fstate = -1; // 상태를 -1로 변경하여 조건문이 참이 되지 않도록 함      
-      
-      State.publish(&state_msg); // state_msg 퍼블리시
       delay(10);
     }
 
@@ -291,12 +295,12 @@ void loop() {
       state_msg.data = "Lock2_done";  
       strip.fill(strip.Color(50, 0, 0, 0));
       strip.show();
-      delay(3000);
+      State.publish(&state_msg); // state_msg 퍼블리시
+      delay(2000);
       strip.clear();
       strip.show();
 
-      Sstate = -1; // 상태를 -1로 변경하여 조건문이 참이 되지 않도록 함  
-      State.publish(&state_msg); // state_msg 퍼블리시
+      Sstate = -1; // 상태를 -1로 변경하여 조건문이 참이 되지 않도록 함 
       delay(10);          
     }
   }
