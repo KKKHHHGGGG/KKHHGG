@@ -144,12 +144,12 @@ class Listener:
                     time.sleep(0.1)
                     self.pub.publish("First_Close")
                     cabinet_data = {"Cabinet": "First_Close"}
-                    cabinet.update(cabinet_data)
+                    ref.update(cabinet_data)
                     
                 if self.cabinet_data == "Unlock2_done":
                     time.sleep(0.1)
                     self.pub.publish("Second_Close")
-                    ref = {"Cabinet": "Second_Close"}
+                    cabinet_data = {"Cabinet": "Second_Close"}
                     ref.update(cabinet_data)
                     
     # 모듈 경로 데이터 확인 및 publish        
