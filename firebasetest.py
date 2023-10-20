@@ -6,7 +6,7 @@ import rospy
 from std_msgs.msg import String
 import signal
 import sys
-from time import sleep
+import time
 
 # 파이어베이스
 import firebase_admin
@@ -50,7 +50,6 @@ class Listener:
         Order_reb = db.reference('Order')
         firstorder_ref = Order_reb.child('First_order')
         secondorder_ref = Order_reb.child('Second_order')
-        # cabinet_ref = db.reference('Cabinet')
         # 호텔 경로
         if message.data in ["Hotel_Mode", "Other_Mode", "None"]:
             if message.data in ["Hotel_Mode", "Other_Mode"]:
@@ -77,18 +76,16 @@ class Listener:
                 first_order_state = first_data.split('_')[1] if len(first_data.split('_')) > 1 else None
                 second_order_state = second_data.split('_')[1] if len(second_data.split('_')) > 1 else None
                 if first_order_state == "arrive":
-                    sleep(0.5)
+                    time.sleep(0.5)
                     Order_reb.child('First_order').set(next)
                     cabinet_data = {"Cabinet": "STANBY"}
                     ref.update(cabinet_data)
                 if second_order_state == "arrive":
-                    sleep(0.5)
+                    time.sleep(0.5)
                     Order_reb.child('Second_order').set(next)
                     cabinet_data = {"Cabinet": "STANBY"}
                     ref.update(cabinet_data)
-            # if message.data in ["Unlock1_done", "Unlock2_done"]:
-            #     cabinet_REF = cabinet_ref.get()
-            #     if
+
         
         #호수 위치 도착            
         elif message.data in ["101_arrive", "102_arrive", "201_arrive", "202_arrive"]:
@@ -112,7 +109,7 @@ class Listener:
         
         # home도착시
         elif message.data == "home_ARRIVE":
-            sleep(1)
+            time.sleep(1)
             firstorder_ref.set(message.data)
             secondorder_ref.set(message.data)
             cabinet_data = {"Cabinet": "STANBY"}
@@ -129,11 +126,23 @@ class Listener:
     def cabinet(self):
         cabinet = db.reference('Cabinet')
         self.cabinet_data = cabinet.get()  # 변수에 데이터 저장     
-        if self.cabinet_data in ["First_Open", "First_Close", "Second_Open", "Second_Close", "STANBY"]:
+        if self.cabinet_data in ["First_Open", "Second_Open", "STANBY"]:
             rospy.loginfo("Received data from cabinet: %s", self.cabinet_data)
             self.pub.publish(self.cabinet_data)
-
-      
+        if self.cabinet_data in ["Unlock1_done", "Unlock2_done"]:
+            start_time = time.time()
+        
+            while time.time() - start_time < 10:
+                new_data = cabinet.get()  # Firebase에서 새로운 데이터 가져오기
+                if new_data in ["First_Close", "Second_Close"]:
+                    self.pub.publish(new_data)
+                    break  # 10초 안에 원하는 데이터가 들어오면 반복문 종료
+            if time.time() - start_time > 10:
+                if self.cabinet_data == "Unlock1_done":
+                    self.pub.publish("First_Close")
+                if self.cabinet_data == "Unlock2_done":
+                    self.pub.publish("Second_Close")
+                    
     # 모듈 경로 데이터 확인 및 publish        
     def Module(self):
         module = db.reference('module')
@@ -161,7 +170,7 @@ class Listener:
         if self.first_order_data in ["101_go", "102_go", "201_go", "202_go", "Next"]:
             rospy.loginfo("Received data from First_order: %s", self.first_order_data)
             if self.first_order_data in ["101_go", "102_go", "201_go", "202_go"]:
-                sleep(1)
+                time.sleep(1)
                 self.pub.publish(self.first_order_data)
 
             
@@ -170,11 +179,11 @@ class Listener:
                 self.second_order_data = order.child('Second_order').get() 
                 if self.second_order_data in ["101_go", "102_go", "201_go", "202_go"]:
                     rospy.loginfo("Received data from Second_order: %s", self.second_order_data)
-                    sleep(1)
+                    time.sleep(1)
                     self.pub.publish(self.second_order_data)
                 elif self.second_order_data in ["101_arrive", "102_arrive", "201_arrive", "202_arrive"]:
                     rospy.loginfo("Received data from Second_order: %s", self.second_order_data)
-                    sleep(1)
+                    time.sleep(1)
                     self.pub.publish(self.second_order_data)
                     
             if self.first_order_data == "Next" and (self.second_order_data == "Next" or self.second_order_data == "home_ARRIVE"):
