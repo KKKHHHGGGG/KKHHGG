@@ -94,6 +94,10 @@ def callback(data):
     if data.data == "STANBY":
         rospy.loginfo(data)
         pub.publish(9)
+
+    if data.data == "home_ARRIVE":
+        rospy.loginfo(data)
+        pub.publish(10)
 def callback2(data):
     global prev_data
     
