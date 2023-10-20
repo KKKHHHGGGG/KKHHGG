@@ -117,4 +117,5 @@ def dc_motor():
         GPIO.cleanup()
 
 if __name__ == "__main__":
+    change_display(1)
     dc_motor()
