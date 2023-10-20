@@ -132,15 +132,18 @@ class Listener:
         if self.cabinet_data in ["Unlock1_done", "Unlock2_done"]:
             start_time = time.time()
         
-            while time.time() - start_time < 10:
+            while time.time() - start_time < 5:
                 new_data = cabinet.get()  # Firebase에서 새로운 데이터 가져오기
                 if new_data in ["First_Close", "Second_Close"]:
+                    time.sleep(0.1)
                     self.pub.publish(new_data)
                     break  # 10초 안에 원하는 데이터가 들어오면 반복문 종료
-            if time.time() - start_time > 10:
+            if time.time() - start_time > 5:
                 if self.cabinet_data == "Unlock1_done":
+                    time.sleep(0.1)
                     self.pub.publish("First_Close")
                 if self.cabinet_data == "Unlock2_done":
+                    time.sleep(0.1)
                     self.pub.publish("Second_Close")
                     
     # 모듈 경로 데이터 확인 및 publish        
