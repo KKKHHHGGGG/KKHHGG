@@ -76,12 +76,12 @@ class Listener:
                 first_order_state = first_data.split('_')[1] if len(first_data.split('_')) > 1 else None
                 second_order_state = second_data.split('_')[1] if len(second_data.split('_')) > 1 else None
                 if first_order_state == "arrive":
-                    time.sleep(0.5)
+                    time.sleep(0.1)
                     Order_reb.child('First_order').set(next)
                     cabinet_data = {"Cabinet": "STANBY"}
                     ref.update(cabinet_data)
                 if second_order_state == "arrive":
-                    time.sleep(0.5)
+                    time.sleep(0.1)
                     Order_reb.child('Second_order').set(next)
                     cabinet_data = {"Cabinet": "STANBY"}
                     ref.update(cabinet_data)
@@ -142,9 +142,14 @@ class Listener:
                 if self.cabinet_data == "Unlock1_done":
                     time.sleep(0.1)
                     self.pub.publish("First_Close")
+                    cabinet_data = {"Cabinet": "First_Close"}
+                    cabinet.update(cabinet_data)
+                    
                 if self.cabinet_data == "Unlock2_done":
                     time.sleep(0.1)
                     self.pub.publish("Second_Close")
+                    cabinet_data = {"Cabinet": "Second_Close"}
+                    cabinet.update(cabinet_data)
                     
     # 모듈 경로 데이터 확인 및 publish        
     def Module(self):
