@@ -141,26 +141,22 @@ void setup() {
 }
 
 void dust() {
-  uint8_t ret = pm2008_i2c.read();
-  int pm1_um = pm2008_i2c.number_of_1_um;  
+
   if (fan_state == Fan_ON) {
     uint32_t currentTime = millis();  // 미세먼지 센서를 10초마다 측정
     if (currentTime - lastMeasurementTime >= 10000) {
-      
       lastMeasurementTime = currentTime;  // 현재 시간으로 업데이트
       if (ret == 0) {
-        
         int motorSpeed = 0;  // motorSpeed를 여기로 이동
-
         if (pm1_um >= 0 && pm1_um < GOOD_THRESHOLD) {
           dust_msg.data = "GOOD";
-          motorSpeed = 50;
-        } else if (pm1_um < NORMAL_THRESHOLD) {
+          motorSpeed = 0;
+        } else if (pm1_um >= GOOD_THRESHOLD && pm1_um < NORMAL_THRESHOLD) {
           dust_msg.data = "NORMAL";
-          motorSpeed = 100;
-        } else if (pm1_um < BAD_THRESHOLD) {
+          motorSpeed = 0;
+        } else if (pm1_um >= NORMAL_THRESHOLD && pm1_um < BAD_THRESHOLD) {
           dust_msg.data = "BAD";
-          motorSpeed = 150;
+          motorSpeed = 100;
         } else {
           dust_msg.data = "VERY BAD";
           motorSpeed = 200;
@@ -177,14 +173,15 @@ void dust() {
 }
 
 void loop() {
-  dust();
+  
   int magnetic_sensorValue1 = digitalRead(magnetic_sensorPin1);
   int magnetic_sensorValue2 = digitalRead(magnetic_sensorPin2);
   int magnetic_sensorValue3 = digitalRead(magnetic_sensorPin3);
   int magnetic_sensorValue4 = digitalRead(magnetic_sensorPin4);
 
-  
-    
+  uint8_t ret = pm2008_i2c.read();
+  int pm1_um = pm2008_i2c.number_of_1_um;  
+  dust();
 
 
   // 다른 작업 수행
