@@ -184,7 +184,7 @@ void loop() {
   dust();
 
 
-  // 다른 작업 수행
+  // 캐비넷 작업 코드드
 
   if (Fstate != prev_state) {
     if (Fstate == STATE_UNLOCKED) {
