@@ -32,8 +32,8 @@ void appCallback(const std_msgs::String& msg)
 ros::Subscriber<std_msgs::String> servo("firebase_to_ros", appCallback);
 
 void setup() {
-  initHardware();
-  initROS();
+  Hardware();
+  ROS();
   openDoor();
 }
 
@@ -46,7 +46,7 @@ void loop() {
   delay(10);
 }
 
-void initHardware() {
+void Hardware() {
   SPI.begin();
   mfrc.PCD_Init();
   pinMode(MAGNETIC_SENSOR_PIN, INPUT_PULLUP);
@@ -54,7 +54,7 @@ void initHardware() {
   servo3.attach(SERVO3_PIN);
 }
 
-void initROS() {
+void ROS() {
   nh.initNode();
   nh.advertise(Rfid);
   nh.subscribe(servo);
