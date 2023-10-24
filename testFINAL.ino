@@ -141,7 +141,7 @@ void setup() {
 }
 
 void dust() {
-
+// 미세먼지 코드
   if (fan_state == Fan_ON) {
     uint32_t currentTime = millis();  // 미세먼지 센서를 10초마다 측정
     if (currentTime - lastMeasurementTime >= 10000) {
@@ -184,7 +184,7 @@ void loop() {
   dust();
 
 
-  // 캐비넷 작업 코드드
+  // 캐비넷 작업 코드
 
   if (Fstate != prev_state) {
     if (Fstate == STATE_UNLOCKED) {
