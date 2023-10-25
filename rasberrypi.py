@@ -16,24 +16,24 @@ pubpub = rospy.Publisher('ros_to_firebase', String, queue_size=10)
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
-GPIO.setup(servo_pin1, GPIO.OUT)
+# GPIO.setup(servo_pin1, GPIO.OUT)
 GPIO.setup(servo_pin2, GPIO.OUT)
 
-pwm1 = GPIO.PWM(servo_pin1, 50)
+# pwm1 = GPIO.PWM(servo_pin1, 50)
 pwm2 = GPIO.PWM(servo_pin2, 50)
-pwm1.start(0)
+# pwm1.start(0)
 pwm2.start(0)
 
 
 
 
 
-def servo_angle1(angle):
-    duty = angle / 18 + 2
+# def servo_angle1(angle):
+#     duty = angle / 18 + 2
 
-    GPIO.output(servo_pin1, True)
-    pwm1.ChangeDutyCycle(duty)
-    time.sleep(1)
+#     GPIO.output(servo_pin1, True)
+#     pwm1.ChangeDutyCycle(duty)
+#     time.sleep(1)
 
 def servo_angle2(angle):
     duty = angle / 18 + 2
@@ -47,7 +47,7 @@ def callback(data):
     
     if data.data == "First_Open":
         rospy.loginfo(data)
-        servo_angle1(90)
+        # servo_angle1(90)
         time.sleep(1)
         pub.publish(0)  
 
@@ -106,7 +106,7 @@ def callback2(data):
             if prev_data != "Lock1_done":
                 time.sleep(0.5)
                 rospy.loginfo("Lock1")
-                servo_angle1(0)
+                # servo_angle1(0)
                 time.sleep(0.1)
         if data.data == "Lock2_done":
             if prev_data != "Lock2_done":
