@@ -112,6 +112,9 @@ class Listener:
             time.sleep(1)
             firstorder_ref.set(message.data)
             secondorder_ref.set(message.data)
+            cabinet_data = {"Cabinet": "home_ARRIVE"}
+            ref.update(cabinet_data)
+            time.sleep(3)
             cabinet_data = {"Cabinet": "STANBY"}
             ref.update(cabinet_data)
             
@@ -152,6 +155,11 @@ class Listener:
                     cabinet_data = {"Cabinet": "Second_Close"}
                     ref.update(cabinet_data)
                     
+        if self.cabinet_data == "home_ARRIVE":
+            time.sleep(0.1)
+            self.pub.publish("home_ARRIVE")
+
+                    
     # 모듈 경로 데이터 확인 및 publish        
     def Module(self):
         module = db.reference('module')
@@ -173,8 +181,8 @@ class Listener:
         order = db.reference('Order')  
            
         self.first_order_data = order.child('First_order').get()       
-        self.second_order_data = None       
-        self.home_arrive_data = False
+        self.second_order_data = None      
+        self.home_arrive_data = False 
          
         # first_order우선 publish        
         if self.first_order_data in ["101_go", "102_go", "201_go", "202_go", "Next"]:
@@ -203,16 +211,7 @@ class Listener:
         elif self.first_order_data in ["101_arrive", "102_arrive", "201_arrive", "202_arrive"]:
             rospy.loginfo("Received data from First_order: %s", self.first_order_data)
             self.pub.publish(self.first_order_data)
-
-        elif self.first_order_data == "home_ARRIVE":
-            if not self.home_arrive_data:
-                self.pub.publish(self.first_order_data)
-                self.home_arrive_data = True
-                rospy.loginfo("Received data from First_order: %s", self.first_order_data)
-            elif self.home_arrive_data:
-                time.sleep(5)
-                self.home_arrive_data = False
-                
+            
     # 데이터 값이 변할 때마다 호출되는 콜백 함수
     def cabinet_on_data_change(self, event):
         
