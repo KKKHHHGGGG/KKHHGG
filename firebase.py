@@ -94,6 +94,8 @@ class Listener:
             first_data = firstorder_ref.get() # 변수에 데이터 저장 
             second_data = secondorder_ref.get() # 변수에 데이터 저장 
             self.pub.publish("drive_done")
+            receive_data = {"Order_Receive": "ARRIVE"}
+            ref.update(receive_data)
 
             if first_data in ["101_go", "102_go", "201_go", "202_go"]:
                 first_number_prev = int(first_data.split('_')[0])
@@ -114,9 +116,12 @@ class Listener:
             secondorder_ref.set(message.data)
             cabinet_data = {"Cabinet": "home_ARRIVE"}
             ref.update(cabinet_data)
-            time.sleep(3)
+            receive_data = {"Order_Receive": "home_ARRIVE"}
+            ref.update(receive_data)            
+            time.sleep(5)
             cabinet_data = {"Cabinet": "STANBY"}
             ref.update(cabinet_data)
+
             
         
         else:
@@ -178,6 +183,7 @@ class Listener:
     
     # 서랍 경로 데이터 확인 및 publish
     def drive_order(self):
+        ref = db.reference('')
         order = db.reference('Order')  
            
         self.first_order_data = order.child('First_order').get()       
@@ -190,6 +196,8 @@ class Listener:
             if self.first_order_data in ["101_go", "102_go", "201_go", "202_go"]:
                 time.sleep(1)
                 self.pub.publish(self.first_order_data)
+                receive_data = {"Order_Receive": "GO"}
+                ref.update(receive_data)
 
             
             elif self.first_order_data == "Next":
@@ -199,10 +207,14 @@ class Listener:
                     rospy.loginfo("Received data from Second_order: %s", self.second_order_data)
                     time.sleep(1)
                     self.pub.publish(self.second_order_data)
+                    receive_data = {"Order_Receive": "GO"}
+                    ref.update(receive_data)
                 elif self.second_order_data in ["101_arrive", "102_arrive", "201_arrive", "202_arrive"]:
                     rospy.loginfo("Received data from Second_order: %s", self.second_order_data)
                     time.sleep(1)
                     self.pub.publish(self.second_order_data)
+                    # receive_data = {"Order_Receive": "ARRIVE"}
+                    # ref.update(receive_data)
                     
             if self.first_order_data == "Next" and (self.second_order_data == "Next" or self.second_order_data == "home_ARRIVE"):
                 rospy.loginfo("home")
@@ -211,6 +223,8 @@ class Listener:
         elif self.first_order_data in ["101_arrive", "102_arrive", "201_arrive", "202_arrive"]:
             rospy.loginfo("Received data from First_order: %s", self.first_order_data)
             self.pub.publish(self.first_order_data)
+            # receive_data = {"Order_Receive": "GO"}
+            # ref.update(receive_data)
             
     # 데이터 값이 변할 때마다 호출되는 콜백 함수
     def cabinet_on_data_change(self, event):
@@ -261,4 +275,3 @@ if __name__ == '__main__':
         listener.listener()
     except rospy.ROSInterruptException:
         pass
-
