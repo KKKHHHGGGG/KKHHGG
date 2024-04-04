@@ -1,173 +1,182 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+import tkinter as tk
+from tkinter import ttk,  IntVar, StringVar
+from tkinter import font as tkFont  # 폰트 모듈 임포트
+import serial
 
-# 모듈
-import rospy
-from std_msgs.msg import String
-from std_msgs.msg import Int32
-import signal
-import sys
-import time
-import math
-
-# 파이어베이스
-import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import db
-from collections import deque
-
-# 종료문구
-def signal_handler(sig, frame):
-    print("Exiting...")
-    sys.exit(0)
-    
-# 파이어베이스 설정
-class Listener:
-    
-
-    
+class ScaraRobotGUI(tk.Tk):
     def __init__(self):
-        # ros토픽 생성
-        rospy.init_node('rosFirebase', anonymous=True)
-        rospy.Subscriber("ros_to_firebase", String, callback=self.callback)
-        self.pub = rospy.Publisher("firebase_to_ros", String and Int32, queue_size=1000)
-        # 파이어베이스 j.son경로 및 url
-        self.credentials_path = credentials_path
-        self.database_url = database_url
-        self.data_queue = deque()
+        super().__init__()
+        self.geometry("800x600")
+        self.title("SCARA Robot Control")
         
-        # Certification 키
-        self.cred = credentials.Certificate(credentials_path)
+        # 시리얼 포트 설정. 적절한 COM 포트로 설정하세요.
+        self.serial_port = serial.Serial('COM3', 115200, timeout=1)
+        
+        # GUI 컨트롤 변수 초기화
+        self.j1_slider_value = tk.DoubleVar()
+        self.j2_slider_value = tk.DoubleVar()
+        self.j3_slider_value = tk.DoubleVar()
+        self.z_slider_value = tk.DoubleVar()
+        self.speed_slider_value = tk.IntVar(value=500)
+        self.acceleration_slider_value = tk.IntVar(value=500)
+        # self.gripper_value = tk.IntVar(value=100)
+        self.save_status = tk.IntVar(value=0)  # 추가: 저장 상태
+        self.run_status = tk.IntVar(value=0)  # 추가: 실행 상태
+        
+        # 슬라이더 변수와 스텝 변수를 저장할 딕셔너리를 초기화합니다.
+        self.slider_vars = {}
+        
+        # 위치 저장을 위한 변수
+        self.positions = []
+        self.positionsCounter = 0
 
-        firebase_admin.initialize_app(self.cred, {
-            'databaseURL': database_url  # Database url
-        })
-        self.hehe = None  # 변수 초기화
-        self.first_order_received = True  # 변수 초기화
+        
+        # 폰트를 불러옴
+        self.customFont = tkFont.Font(family="Arial", size=10, weight="bold")
+
+        # GUI 컨트롤 생성
+        self.create_widgets()
+        
+        # 저장 포지션 생성
+        self.create_save_position_button()
+
+        # RUN/STOP 버튼 생성 및 위치 설정
+        self.run_button = ttk.Button(self, text="RUN", command=self.toggleRunStatus)
+        self.run_button.place(x=700, y=300, width=150, height=50)
+        
+        # # 텍스트 필드에 값을 입력할 때 슬라이더 값도 업데이트하기 위한 StringVar
+        # self.speed_text_value = StringVar(value='500')
+        # self.acceleration_text_value = StringVar(value='500')
+        # # Entry 위젯과 연결된 StringVar 변수
+        # self.current_speed_text_value = StringVar(value='500')
+        # self.current_acceleration_text_value = StringVar(value='500')
+        
+        # 슬라이더 생성
+        self.create_sliders()
+        
+    def create_widgets(self):
+        self.create_slider_with_buttons("J1", -100, 100, 100, 180)
+        self.create_slider_with_buttons("J2", -100, 100, 100, 290)
+        self.create_slider_with_buttons("J3", -100, 100, 100, 400)
+        self.create_slider_with_buttons("Z", -100, 100, 100, 510)
+
+        # 여기에 J2, J3, Z에 대한 비슷한 코드를 추가할 수 있습니다.
+        
+    def create_slider_with_buttons(self, label, min_val, max_val, x, y):
+        # 라벨 위치 설정
+        ttk.Label(self, text=f"{label}:", font=self.customFont).place(x=x-50, y=y+5)
+
+        # 슬라이더 변수 생성 및 저장
+        slider_var = getattr(self, f"{label.lower()}_slider_value")  # 시작 값이 0이라고 가정
+        self.slider_vars[label] = slider_var
+
+        # 슬라이더 위치 설정
+        slider = ttk.Scale(self, from_=min_val, to=max_val, orient='horizontal', variable=slider_var)
+        slider.place(x=x, y=y, width=270)
+
+        # "+" 및 "-" 버튼 작동량을 설정하는 변수. 각 슬라이더별로 별도 설정.
+        step_var = tk.StringVar(value="1")
+        self.slider_vars[f'{label}_step'] = step_var
+
+        # 슬라이더 값 입력 필드 (현재 값 표시용)
+        entry = ttk.Entry(self, textvariable=slider_var, width=5)
+        entry.place(x=x+320, y=y+5)
+
+        # 슬라이더 이동량 설정 입력 필드
+        step_entry = ttk.Entry(self, textvariable=step_var, width=5)
+        step_entry.place(x=x+110, y=y+40)
+
+        # "-" 버튼 위치 설정
+        ttk.Button(self, text="-", command=lambda: self.adjust_slider(slider_var, step_var.get(), -1)).place(x=x, y=y+40, width=50, height=25)
+
+        # "+" 버튼 위치 설정
+        ttk.Button(self, text="+", command=lambda: self.adjust_slider(slider_var, step_var.get(), 1)).place(x=x+245, y=y+40, width=50, height=25)
+
+    def create_save_position_button(self):
+        # SAVE POSITION 버튼 생성 및 위치 설정
+        ttk.Button(self, text="SAVE POSITION", command=self.savePosition).place(x=500, y=300, width=150, height=50)
+
+    # def create_run_button(self):
+    #     # RUN 버튼 생성 및 위치 설정, 폰트 적용
+    #     ttk.Button(self, text="RUN", command=self.toggleRunStatus).place(x=700, y=300, width=150, height=50)
     
-    # subscriber 및 파이어베이스 업데이트    
-    def callback(self, message):
-        # 경로 참조
-        ref = db.reference('')
- 
+    def create_sliders(self):
+        # 속도 슬라이더 생성
+        ttk.Label(self, text="SPEED").place(x=555, y=480)
+        ttk.Scale(self, from_=0, to=1000, orient="horizontal", variable=self.speed_slider_value, command=lambda event=None: self.update_and_send_data(), length=150).place(x=500, y=500)
+        speed_entry = ttk.Entry(self, textvariable=self.speed_slider_value, width=3)
+        speed_entry.place(x=560, y=530)
 
-
-    # 서랍 경로 데이터 확인 및 publish
-    def cabinet(self):
-        ref = db.reference('')
-
-
-                    
-    # 모듈 경로 데이터 확인 및 publish        
-    def Module(self):
-        module = db.reference('module')
-   
-    
-    # 미세먼지 경로 데이터 확인 및 publish        
-    def Dust(self):
-        Dust = db.reference('dust')
-
-    
-    # jog운동
-    def jog(self):
-        ref = db.reference('')
-        jog_ref = db.reference('jog')
-        self.jog1_data = jog_ref.child('jog1').get() 
-        self.jog2_data = jog_ref.child('jog2').get() 
-        self.jog3_data = jog_ref.child('jog3').get() 
-        self.z_data = jog_ref.child('z').get() 
+        # 가속도 슬라이더 생성
+        ttk.Label(self, text="ACCELETION").place(x=740, y=480)
+        ttk.Scale(self, from_=0, to=1000, orient="horizontal", variable=self.acceleration_slider_value, command=lambda event=None: self.update_and_send_data(), length=150).place(x=700, y=500)
+        acceleration_entry = ttk.Entry(self, textvariable=self.acceleration_slider_value, width=3)
+        acceleration_entry.place(x=760, y=530)
         
-        if self.jog1_data == "Stop" or (isinstance(self.jog1_data, int) and -100 <= self.jog1_data <= 100):
-            rospy.loginfo("Received data from jog1: %s", self.jog1_data)
-            if isinstance(self.jog1_data, int) and -100 <= self.jog1_data <= 100:
-                time.sleep(0.1)
-                self.pub.publish(self.jog1_data)
-            elif self.jog1_data == "Stop":
-                rospy.loginfo("Received data from jog1: %s", self.jog1_data)
-                time.sleep(0.1)
-                self.pub.publish("Stop")
-                
-        if self.jog2_data == "Stop" or (isinstance(self.jog2_data, int) and -100 <= self.jog2_data <= 100):
-            rospy.loginfo("Received data from jog2: %s", self.jog2_data)
-            if isinstance(self.jog2_data, int) and -100 <= self.jog2_data <= 100:
-                time.sleep(0.1)
-                self.pub.publish(self.jog2_data)
-            elif self.jog2_data == "Stop":
-                rospy.loginfo("Received data from jog2: %s", self.jog2_data)
-                time.sleep(0.1)
-                self.pub.publish("Stop")
+    # def validate_int(self, speed_text_value, acceleration_text_value):
+    #     # 현재 텍스트 값을 가져옴
+    #     current_speed_text_value = speed_text_value.get()
+    #     current_acceleration_text_valuee = acceleration_text_value.get()
+    #     # 값이 정수로 변환 가능한지 확인
+    #     try:
+    #         int(current_speed_text_value)  # 시도해보고 변환 가능하면 문제 없음
+    #         int(current_acceleration_text_valuee)
+    #     except ValueError:
+    #         # 변환 불가능하면, 마지막 유효한 값으로 되돌림
+    #         speed_text_value.set(self.speed_slider_value.get())
+    #         acceleration_text_value.set(self.acceleration_slider_value.get())
 
-        if self.jog3_data == "Stop" or (isinstance(self.jog3_data, int) and -100 <= self.jog3_data <= 100):
-            rospy.loginfo("Received data from jog3: %s", self.jog3_data)
-            if isinstance(self.jog3_data, int) and -100 <= self.jog3_data <= 100:
-                time.sleep(0.1)
-                self.pub.publish(self.jog3_data)
-            elif self.jog3_data == "Stop":
-                rospy.loginfo("Received data from jog3: %s", self.jog3_data)
-                time.sleep(0.1)
-                self.pub.publish("Stop")
+    def toggleRunStatus(self):
+        if self.run_status.get() == 0:
+            self.run_status.set(1)
+            self.run_button.config(text="STOP")
+        else:
+            self.run_status.set(0)
+            self.run_button.config(text="RUN")
 
-        if self.z_data == "Stop" or (isinstance(self.z_data, int) and -100 <= self.z_data <= 100):
-            rospy.loginfo("Received data from z: %s", self.z_data)
-            if isinstance(self.z_data, int) and -100 <= self.z_data <= 100:
-                time.sleep(0.1)
-                self.pub.publish(self.z_data)
-            elif self.z_data == "Stop":
-                rospy.loginfo("Received data from z: %s", self.z_data)
-                time.sleep(0.1)
-                self.pub.publish("Stop")
+        # 변경된 run_status 값으로 데이터 전송
+        self.update_and_send_data()
 
+        # 테스트 출력
+        print(f"Run status toggled to {self.run_status.get()}")
 
-    # 데이터 값이 변할 때마다 호출되는 콜백 함수
-    def cabinet_on_data_change(self, event):
+    def adjust_slider(self, slider_var, step, direction):
+        try:
+            step = float(step)  # step가 문자열이거나 숫자라고 가정하고 float으로 변환합니다.
+        except ValueError:
+            step = 1.0  # 변환에 실패할 경우 기본값 1.0을 사용합니다.
+
+        current_value = slider_var.get() + (step * direction)
+        slider_var.set(current_value)   
+        self.update_and_send_data()
         
-        self.cabinet()
+    def savePosition(self):
+        # save_status 값을 1로 설정
+        self.save_status.set(1)
         
-    def module_on_data_change(self, event):
-        self.Module()
+        # 변경된 save_status 값으로 데이터 전송
+        self.update_and_send_data()
         
-    def dust_on_data_change(self, event):
-        self.Dust()
-    
-    def jog_on_data_change(self, event):
-        self.jog()
+        # Position saved 메시지 출력
+        print("Position saved")
         
-    def callback_on_data_change(self, event):
-        self.callback()
-            
-    def listener(self):
-        # 파이어베이스 경로에 대한 이벤트 리스너 등록
-        jog_ref = db.reference('jog')  # 'Order' 경로 참조
-        dust_ref = db.reference('dust') # 'dust' 경로 참조
-        cabinet_ref = db.reference('Cabinet')   # 'Cabinet' 경로 참조
-        module_ref = db.reference('module')  # 'module' 경로 참조
+        # 데이터 전송 후 save_status 값을 다시 0으로 초기화
+        self.save_status.set(0)
 
-# 특정 child 경로들에 대한 참조
-        jog1_ref = jog_ref.child('jog1')
-        jog2_ref = jog_ref.child('jog2')
-        jog3_ref = jog_ref.child('jog3')
-        z_ref = jog_ref.child('z')
-        dust_state_ref = dust_ref.child('Dust_State')
-        module_state_ref = module_ref.child('Module_Mode')
-        
-        cabinet_ref.listen(lambda event: self.cabinet_on_data_change(event))
-        jog1_ref.listen(lambda event: self.jog_on_data_change(event) and self.callback_on_data_change(event))
-        jog2_ref.listen(lambda event: self.jog_on_data_change(event) and self.callback_on_data_change(event))
-        jog3_ref.listen(lambda event: self.jog_on_data_change(event) and self.callback_on_data_change(event))
-        z_ref.listen(lambda event: self.jog_on_data_change(event) and self.callback_on_data_change(event))
-        dust_state_ref.listen(lambda event: self.dust_on_data_change(event))
-        module_state_ref.listen(lambda event: self.module_on_data_change(event))
 
-    
-if __name__ == '__main__':
-    signal.signal(signal.SIGINT, signal_handler)
-    #경로 지정
-    credentials_path = 'mca-test-e270e-firebase-adminsdk-wthsv-e5ef79fec3.json'
-    database_url = 'https://mca-test-e270e-default-rtdb.firebaseio.com/'
-    try:
-        #firebase라이브러리 경로 출력
-        print(firebase_admin)
-        listener = Listener()
-        listener.listener()
-    except rospy.ROSInterruptException:
-        pass
+    def update_and_send_data(self):
+        # 데이터 문자열 생성. 데이터 필드의 의미를 정확하게 반영합니다.
+        data_str = "{},{},{},{},{},{},{},{}".format(
+            self.save_status.get(), self.run_status.get(),
+            int(self.j1_slider_value.get()), int(self.j2_slider_value.get()),
+            int(self.j3_slider_value.get()), int(self.z_slider_value.get()),
+            int(self.speed_slider_value.get()), int(self.acceleration_slider_value.get())
+        )
+        
+        # 데이터 전송
+        print(f"Sending: {data_str}")
+        self.serial_port.write(data_str.encode() + b'\n')  # 개행 문자 추가
+        
+if __name__ == "__main__":
+    app = ScaraRobotGUI()
+    app.mainloop()
