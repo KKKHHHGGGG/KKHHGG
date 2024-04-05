@@ -53,6 +53,8 @@ class ScaraRobotGUI(tk.Tk):
         
         # 슬라이더 생성
         self.create_sliders()
+        # home 버튼 추가
+        self.create_home_button()
         
     def create_widgets(self):
         self.create_slider_with_buttons("J1", -100, 100, 100, 180)
@@ -148,6 +150,23 @@ class ScaraRobotGUI(tk.Tk):
 
         current_value = slider_var.get() + (step * direction)
         slider_var.set(current_value)   
+        self.update_and_send_data()
+    
+    def create_home_button(self):
+        ttk.Button(self, text="HOME", command=self.send_home_command).place(x=100, y=50, width=100, height=50)
+
+    def send_home_command(self):
+    # 각 슬라이더의 값을 설정
+        self.j1_slider_value.set(0)
+        self.j2_slider_value.set(0)
+        self.j3_slider_value.set(0)
+        self.z_slider_value.set(0)
+        # 저장 상태와 실행 상태는 0으로 초기화
+        self.save_status.set(0)
+        self.run_status.set(0)
+        # 속도와 가속도를 500으로 설정
+        self.speed_slider_value.set(500)
+        self.acceleration_slider_value.set(500)
         self.update_and_send_data()
         
     def savePosition(self):
