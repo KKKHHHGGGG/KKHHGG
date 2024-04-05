@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk,  IntVar, StringVar
 from tkinter import font as tkFont  # 폰트 모듈 임포트
 import serial
+import time
 
 class ScaraRobotGUI(tk.Tk):
     def __init__(self):
@@ -11,6 +12,7 @@ class ScaraRobotGUI(tk.Tk):
         
         # 시리얼 포트 설정. 적절한 COM 포트로 설정하세요.
         self.serial_port = serial.Serial('COM3', 115200, timeout=1)
+        # self.serial_port1 = serial.Serial('COM6', 115200, timeout=1) #FOUP아두이노통신
         
         # GUI 컨트롤 변수 초기화
         self.j1_slider_value = tk.DoubleVar()
@@ -30,9 +32,21 @@ class ScaraRobotGUI(tk.Tk):
         self.positions = []
         self.positionsCounter = 0
 
+        self.message = 0
         
         # 폰트를 불러옴
         self.customFont = tkFont.Font(family="Arial", size=10, weight="bold")
+        
+        # 경고등을 그릴 Canvas 생성
+        self.canvas = tk.Canvas(self, width=1000, height=800)
+        self.canvas.pack()
+        
+        # 빨간색 경고등 생성
+        self.FOUP1_light = self.canvas.create_oval(480, 130, 580, 230, fill='gray')
+        # 초록색 경고등 생성
+        self.FOUP2_light = self.canvas.create_oval(610, 130, 710, 230, fill='gray')
+        # 초록색 경고등 생성
+        self.Camera_light = self.canvas.create_oval(740, 130, 840, 230, fill='gray')
 
         # GUI 컨트롤 생성
         self.create_widgets()
@@ -55,7 +69,39 @@ class ScaraRobotGUI(tk.Tk):
         self.create_sliders()
         # home 버튼 추가
         self.create_home_button()
-        
+        # 웨이퍼 프로세싱 버튼 추가
+        self.create_wafer_processing_button()
+    
+    def create_wafer_processing_button(self):
+            # WAFER PROCESSING 버튼 생성 및 클래스 속성으로 저장
+            self.wafer_processing_button = ttk.Button(self, text="WAFER PROCESSING", command=self.create_wafer_processing)
+            self.wafer_processing_button.place(x=500, y=50, width=150, height=50)
+
+    # 웨이퍼 이동 메커니즘 구현
+    def create_wafer_processing(self):
+        if self.wafer_processing_button["text"] == "WAFER PROCESSING":
+            self.send_home_command()
+            # 버튼의 텍스트를 STOP으로 변경
+            self.wafer_processing_button.config(text="STOP")
+            # FUOP 도착시 이동
+            # if self.message == 1_1:
+            #    self.set_and_send_data(50, 30, 40, 10, 500, 500)
+            #    time.sleep(5)
+            #    self.set_and_send_data(50, 30, 40, 10, 500, 500)
+            #    time.sleep(5)
+            #    self.set_and_send_data(50, 30, 40, 10, 500, 500)
+            #    time.sleep(5)
+            #    self.received_and_send_to_FOUP(1, 0) #첫번째 풉에 있는 웨이퍼를 다 뺐다는 표시
+               
+        elif self.wafer_processing_button["text"] == "STOP":
+            # STOP 버튼을 누른 경우의 동작 정의
+            # 예를 들어, 아두이노에 STOP 명령어를 보내거나, 다른 초기화 작업을 수행할 수 있습니다.
+            print("Stop processing")
+            self.run_status.set(0)
+            self.update_and_send_data()
+            # 필요에 따라 다른 초기화 작업을 여기에 추가
+            self.wafer_processing_button.config(text="WAFER PROCESSING") 
+            
     def create_widgets(self):
         self.create_slider_with_buttons("J1", -100, 100, 100, 180)
         self.create_slider_with_buttons("J2", -100, 100, 100, 290)
@@ -169,6 +215,22 @@ class ScaraRobotGUI(tk.Tk):
         self.acceleration_slider_value.set(500)
         self.update_and_send_data()
         
+    def set_and_send_data(self, j1_val, j2_val, j3_val, z_val, save_status_val, run_status_val, speed_val, acceleration_val):
+        # 각 슬라이더의 값을 설정
+        self.j1_slider_value.set(j1_val)
+        self.j2_slider_value.set(j2_val)
+        self.j3_slider_value.set(j3_val)
+        self.z_slider_value.set(z_val)
+        # 저장 상태와 실행 상태 설정
+        self.save_status.set(save_status_val)
+        self.run_status.set(run_status_val)
+        # 속도와 가속도를 설정
+        self.speed_slider_value.set(speed_val)
+        self.acceleration_slider_value.set(acceleration_val)
+        # 변경된 데이터 전송
+        self.update_and_send_data()
+    
+        
     def savePosition(self):
         # save_status 값을 1로 설정
         self.save_status.set(1)
@@ -195,7 +257,21 @@ class ScaraRobotGUI(tk.Tk):
         # 데이터 전송
         print(f"Sending: {data_str}")
         self.serial_port.write(data_str.encode() + b'\n')  # 개행 문자 추가
-        
+    
+    # 풉 아두이노와의 통신
+    # def received_and_send_to_FOUP(self, FOUP_num, send_data):
+    #     if self.serial_port1.readline() == "1_0": #첫 번째 FOUP안에 웨이퍼가 없는 경우
+    #         self.message = 1_0
+    #     if self.serial_port1.readline() == "1_1": #첫 번째 FOUP안에 웨이퍼가 있는 경우
+    #         self.message = 1_1
+    #     if self.serial_port1.readline() == "2_0": #두 번째 FOUP안에 웨이퍼가 없는 경우
+    #         self.message = 2_0
+    #     if self.serial_port1.readline() == "2_1": #두 번째 FOUP안에 웨이퍼가 있는 경우
+    #         self.message = 2_1
+    #     if FOUP_num == 1 and send_data == 0: #첫 번째 FOUP안에 웨이퍼를 다 뺀 경우
+    #         self.serial_port1.write("1_0") # FOUP아두이노에게 1(첫 번째FOUP)_0(웨이퍼 유무)를 보냄
+    #     if FOUP_num == 2 and send_data == 1: #두 번째 FOUP안에 웨이퍼를 다 넣은 경우
+    #         self.serial_port1.write("2_1") # FOUP아두이노에게 2(두 번째 FOUP)_1(웨이퍼 유무)를 보냄
 if __name__ == "__main__":
     app = ScaraRobotGUI()
     app.mainloop()
