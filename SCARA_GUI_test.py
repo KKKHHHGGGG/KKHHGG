@@ -3,6 +3,7 @@ from tkinter import ttk,  IntVar, StringVar
 from tkinter import font as tkFont  # 폰트 모듈 임포트
 import serial
 import time
+from PIL import Image, ImageTk
 
 class ScaraRobotGUI(tk.Tk):
     def __init__(self):
@@ -25,6 +26,7 @@ class ScaraRobotGUI(tk.Tk):
         self.save_status = tk.IntVar(value=0)  # 추가: 저장 상태
         self.run_status = tk.IntVar(value=0)  # 추가: 실행 상태
         
+        
         # 슬라이더 변수와 스텝 변수를 저장할 딕셔너리를 초기화합니다.
         self.slider_vars = {}
         
@@ -35,24 +37,37 @@ class ScaraRobotGUI(tk.Tk):
         self.message = 0
         
         # 폰트를 불러옴
-        self.customFont = tkFont.Font(family="Arial", size=10, weight="bold")
+        self.customFont = tkFont.Font(family="Arial", size=14, weight="bold")
         
         # 경고등을 그릴 Canvas 생성
         self.canvas = tk.Canvas(self, width=1000, height=800)
         self.canvas.pack()
         
         # 빨간색 경고등 생성
-        self.FOUP1_light = self.canvas.create_oval(480, 130, 580, 230, fill='gray')
+        self.FOUP1_light = self.canvas.create_oval(500, 150, 600, 250, fill='gray')
         # 초록색 경고등 생성
-        self.FOUP2_light = self.canvas.create_oval(610, 130, 710, 230, fill='gray')
+        self.FOUP2_light = self.canvas.create_oval(625, 150, 725, 250, fill='gray')
         # 초록색 경고등 생성
-        self.Camera_light = self.canvas.create_oval(740, 130, 840, 230, fill='gray')
+        self.Camera_light = self.canvas.create_oval(750, 150, 850, 250, fill='gray')
+        # 화살표 생성: (시작 x, 시작 y, 끝 x, 끝 y)
+        self.arrow_robot_wafer = self.canvas.create_line(190, 695, 300, 695, arrow=tk.LAST, fill="gray", width=13)
+        self.arrow_wafer_camera = self.canvas.create_line(390, 695, 510, 695, arrow=tk.LAST, fill="gray", width=13)
+        self.arrow_camera_trash = self.canvas.create_line(600, 685, 740, 645, arrow=tk.LAST, fill="gray", width=13)
+        self.arrow_camera_foup = self.canvas.create_line(600, 705, 740, 735, arrow=tk.LAST, fill="gray", width=13)
+        # 진행도 생성
+        self.stick_1 = self.canvas.create_line(90, 790, 265, 790, fill="gray", width=13)
+        self.stick_2 = self.canvas.create_line(275, 790, 445, 790, fill="gray", width=13)
+        self.stick_3 = self.canvas.create_line(455, 790, 625, 790, fill="gray", width=13)
+        self.stick_4 = self.canvas.create_line(635, 790, 810, 790, fill="gray", width=13)
 
         # GUI 컨트롤 생성
         self.create_widgets()
         
         # 저장 포지션 생성
         self.create_save_position_button()
+        
+        # UI 생성
+        self.initialize_ui()
 
         # RUN/STOP 버튼 생성 및 위치 설정
         self.run_button = ttk.Button(self, text="RUN", command=self.toggleRunStatus)
@@ -71,7 +86,59 @@ class ScaraRobotGUI(tk.Tk):
         self.create_home_button()
         # 웨이퍼 프로세싱 버튼 추가
         self.create_wafer_processing_button()
+        
+    def initialize_ui(self):
+        # Pillow를 사용하여 이미지 로드 및 크기 조정
+        wafer_ui = Image.open(r'C:\Users\taery\Downloads\free-icon-waffle-10022638.png')
+        resized_image = wafer_ui.resize((80, 80))  # 이미지 크기 조정
+        photo = ImageTk.PhotoImage(resized_image)
+
+        # 이미지를 표시할 라벨 생성 및 위치 지정
+        label = tk.Label(self, image=photo)  # `self`를 사용
+        label.place(x=300, y=655)
+        label.image = photo  # 이미지 참조 유지
     
+        # Pillow를 사용하여 이미지 로드 및 크기 조정
+        scara_robot_ui = Image.open(r'C:\Users\taery\Downloads\free-icon-robotic-arm-1404716.png')
+        resized_image = scara_robot_ui.resize((80, 80))  # 이미지 크기 조정
+        photo = ImageTk.PhotoImage(resized_image)
+
+        # 이미지를 표시할 라벨 생성 및 위치 지정
+        label = tk.Label(self, image=photo)  # `self`를 사용
+        label.place(x=90, y=640)
+        label.image = photo  # 이미지 참조 유지
+        
+        
+        # Pillow를 사용하여 이미지 로드 및 크기 조정
+        camera_ui = Image.open(r'C:\Users\taery\Downloads\free-icon-camera-685655.png')
+        resized_image = camera_ui.resize((70, 70))  # 이미지 크기 조정
+        photo = ImageTk.PhotoImage(resized_image)
+
+        # 이미지를 표시할 라벨 생성 및 위치 지정
+        label = tk.Label(self, image=photo)  # `self`를 사용
+        label.place(x=520, y=655)
+        label.image = photo  # 이미지 참조 유지
+        
+        # Pillow를 사용하여 이미지 로드 및 크기 조정
+        trash_ui = Image.open(r'C:\Users\taery\Downloads\free-icon-trash-can-bin-12280812.png')
+        resized_image = trash_ui.resize((70, 70))  # 이미지 크기 조정
+        photo = ImageTk.PhotoImage(resized_image)
+
+        # 이미지를 표시할 라벨 생성 및 위치 지정
+        label = tk.Label(self, image=photo)  # `self`를 사용
+        label.place(x=745, y=610)
+        label.image = photo  # 이미지 참조 유지
+        
+        # Pillow를 사용하여 이미지 로드 및 크기 조정
+        foup_ui = Image.open(r'C:\Users\taery\Downloads\free-icon-filing-cabinet-3629552.png')
+        resized_image = foup_ui.resize((60, 60))  # 이미지 크기 조정
+        photo = ImageTk.PhotoImage(resized_image)
+
+        # 이미지를 표시할 라벨 생성 및 위치 지정
+        label = tk.Label(self, image=photo)  # `self`를 사용
+        label.place(x=750, y=705)
+        label.image = photo  # 이미지 참조 유지
+        
     def create_wafer_processing_button(self):
             # WAFER PROCESSING 버튼 생성 및 클래스 속성으로 저장
             self.wafer_processing_button = ttk.Button(self, text="WAFER PROCESSING", command=self.create_wafer_processing)
@@ -83,6 +150,8 @@ class ScaraRobotGUI(tk.Tk):
             self.send_home_command()
             # 버튼의 텍스트를 STOP으로 변경
             self.wafer_processing_button.config(text="STOP")
+            self.toggle_buttons_state('disabled')
+
             # FUOP 도착시 이동
             # if self.message == 1_1:
             #    self.set_and_send_data(50, 30, 40, 10, 500, 500)
@@ -99,20 +168,28 @@ class ScaraRobotGUI(tk.Tk):
             print("Stop processing")
             self.run_status.set(0)
             self.update_and_send_data()
+            self.toggle_buttons_state('normal')
             # 필요에 따라 다른 초기화 작업을 여기에 추가
             self.wafer_processing_button.config(text="WAFER PROCESSING") 
-            
+
+    def toggle_buttons_state(self, state):
+        # save_position_button, home_button, run_button의 상태를 변경
+        self.save_position_button.config(state=state)
+        self.home_button.config(state=state)
+        self.run_button.config(state=state)
+
+                    
     def create_widgets(self):
         self.create_slider_with_buttons("J1", -100, 100, 100, 180)
         self.create_slider_with_buttons("J2", -100, 100, 100, 290)
         self.create_slider_with_buttons("J3", -100, 100, 100, 400)
-        self.create_slider_with_buttons("Z", -100, 100, 100, 510)
+        self.create_slider_with_buttons("Z", -100, 100, 100, 500)
 
         # 여기에 J2, J3, Z에 대한 비슷한 코드를 추가할 수 있습니다.
         
     def create_slider_with_buttons(self, label, min_val, max_val, x, y):
         # 라벨 위치 설정
-        ttk.Label(self, text=f"{label}:", font=self.customFont).place(x=x-50, y=y+5)
+        ttk.Label(self, text=f"{label}", font=self.customFont).place(x=x-50, y=y)
 
         # 슬라이더 변수 생성 및 저장
         slider_var = getattr(self, f"{label.lower()}_slider_value")  # 시작 값이 0이라고 가정
@@ -141,8 +218,9 @@ class ScaraRobotGUI(tk.Tk):
         ttk.Button(self, text="+", command=lambda: self.adjust_slider(slider_var, step_var.get(), 1)).place(x=x+245, y=y+40, width=50, height=25)
 
     def create_save_position_button(self):
-        # SAVE POSITION 버튼 생성 및 위치 설정
-        ttk.Button(self, text="SAVE POSITION", command=self.savePosition).place(x=500, y=300, width=150, height=50)
+        # SAVE POSITION 버튼 생성 및 클래스 속성으로 저장
+        self.save_position_button = ttk.Button(self, text="SAVE POSITION", command=self.savePosition)
+        self.save_position_button.place(x=500, y=300, width=150, height=50)
 
     # def create_run_button(self):
     #     # RUN 버튼 생성 및 위치 설정, 폰트 적용
@@ -199,7 +277,8 @@ class ScaraRobotGUI(tk.Tk):
         self.update_and_send_data()
     
     def create_home_button(self):
-        ttk.Button(self, text="HOME", command=self.send_home_command).place(x=100, y=50, width=100, height=50)
+        self.home_button = ttk.Button(self, text="HOME", command=self.send_home_command)
+        self.home_button.place(x=500, y=400, width=350, height=50)
 
     def send_home_command(self):
     # 각 슬라이더의 값을 설정
