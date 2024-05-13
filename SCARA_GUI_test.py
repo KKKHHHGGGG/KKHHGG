@@ -13,7 +13,7 @@ class ScaraRobotGUI(tk.Tk):
         
         # 시리얼 포트 설정. 적절한 COM 포트로 설정하세요.
         self.serial_port = serial.Serial('COM3', 115200, timeout=1)
-        # self.serial_port1 = serial.Serial('COM6', 115200, timeout=1) #FOUP아두이노통신
+        self.serial_port1 = serial.Serial('COM8', 115200, timeout=1) #FOUP아두이노통신
         
         # GUI 컨트롤 변수 초기화
         self.j1_slider_value = tk.DoubleVar()
@@ -26,7 +26,13 @@ class ScaraRobotGUI(tk.Tk):
         self.save_status = tk.IntVar(value=0)  # 추가: 저장 상태
         self.run_status = tk.IntVar(value=0)  # 추가: 실행 상태
         
-        
+        # 폰트를 불러옴 
+        self.customFont = tkFont.Font(family="Arial", size=14, weight="bold")     
+           
+        # 스타일 생성
+        style = ttk.Style(self)
+        style.configure("Exit.TButton", font=self.customFont, background='red', foreground='red')
+
         # 슬라이더 변수와 스텝 변수를 저장할 딕셔너리를 초기화합니다.
         self.slider_vars = {}
         
@@ -34,10 +40,11 @@ class ScaraRobotGUI(tk.Tk):
         self.positions = []
         self.positionsCounter = 0
 
-        self.message = 0
+        self.message = None
         
-        # 폰트를 불러옴
-        self.customFont = tkFont.Font(family="Arial", size=14, weight="bold")
+        self.after_id = None  # after 호출 ID를 저장할 변수
+        
+
         
         # 경고등을 그릴 Canvas 생성
         self.canvas = tk.Canvas(self, width=1000, height=800)
@@ -86,6 +93,10 @@ class ScaraRobotGUI(tk.Tk):
         self.create_home_button()
         # 웨이퍼 프로세싱 버튼 추가
         self.create_wafer_processing_button()
+        # 종료 버튼
+        self.create_Exit_button()
+        # clear 버튼 추가
+        self.create_Clear_button()
         
     def initialize_ui(self):
         # Pillow를 사용하여 이미지 로드 및 크기 조정
@@ -146,31 +157,87 @@ class ScaraRobotGUI(tk.Tk):
 
     # 웨이퍼 이동 메커니즘 구현
     def create_wafer_processing(self):
-        if self.wafer_processing_button["text"] == "WAFER PROCESSING":
-            self.send_home_command()
-            # 버튼의 텍스트를 STOP으로 변경
-            self.wafer_processing_button.config(text="STOP")
-            self.toggle_buttons_state('disabled')
+        def process_response():
+            if self.wafer_processing_button["text"] == "WAFER PROCESSING":
+                # "WAFER PROCESSING" 상태일 때 동작
+                self.wafer_processing_button.config(text="STOP")
+                self.toggle_buttons_state('disabled')
+                if self.message == 'FirstComeC':
+                    print("received_FirstComeC")    
+                    self.canvas.itemconfig(self.FOUP1_light, fill='green')
+                    self.process_steps(0)  # 시작 단계 0에서 프로세스 시작
 
-            # FUOP 도착시 이동
-            # if self.message == 1_1:
-            #    self.set_and_send_data(50, 30, 40, 10, 500, 500)
-            #    time.sleep(5)
-            #    self.set_and_send_data(50, 30, 40, 10, 500, 500)
-            #    time.sleep(5)
-            #    self.set_and_send_data(50, 30, 40, 10, 500, 500)
-            #    time.sleep(5)
-            #    self.received_and_send_to_FOUP(1, 0) #첫번째 풉에 있는 웨이퍼를 다 뺐다는 표시
-               
+        if self.wafer_processing_button["text"] == "WAFER PROCESSING":
+            # 버튼이 "WAFER PROCESSING" 상태일 때만 FOUP 명령을 보냅니다.
+            self.received_and_send_to_FOUP(1, 1, process_response)
         elif self.wafer_processing_button["text"] == "STOP":
-            # STOP 버튼을 누른 경우의 동작 정의
-            # 예를 들어, 아두이노에 STOP 명령어를 보내거나, 다른 초기화 작업을 수행할 수 있습니다.
+            # "STOP" 상태일 때의 동작을 정의
             print("Stop processing")
-            self.run_status.set(0)
-            self.update_and_send_data()
-            self.toggle_buttons_state('normal')
-            # 필요에 따라 다른 초기화 작업을 여기에 추가
-            self.wafer_processing_button.config(text="WAFER PROCESSING") 
+            self.stop_processing()  # 프로세스 종료 단계 등을 처리
+            self.toggle_buttons_state('normal')  # 버튼 상태를 원래대로 복구
+            self.wafer_processing_button.config(text="WAFER PROCESSING")  # 버튼 텍스트를 다시 설정
+
+    def stop_processing(self):
+        # 모든 예정된 작업을 취소하고 초기화
+        if self.after_id:
+            self.after_cancel(self.after_id)
+            self.after_id = None
+        self.after_id = self.after(100, lambda: self.process_steps(12))  # 원점 복귀
+        print("Processing stopped and reset to initial state.")
+
+        
+    def process_steps(self, step):
+        
+        if self.after_id:
+            self.after_cancel(self.after_id)
+            self.after_id = None
+        if step == 0 and self.message == 'FirstComeC':
+            time.sleep(1)
+            self.set_and_send_data(70, 0, 0, 0, 0, 0, 500, 500)
+            self.after(8000, lambda: self.process_steps(1))
+        elif step == 1:
+            self.set_and_send_data(70, 0, 25, 75, 0, 0, 300, 300)
+            self.canvas.itemconfig(self.arrow_robot_wafer, fill='green')
+            self.after(17000, lambda: self.process_steps(2))
+        elif step == 2:
+            self.set_and_send_data(70, 0, -15, 75, 0, 0, 300, 300)
+            self.after(8000, lambda: self.process_steps(3)) 
+        elif step == 3:
+            self.set_and_send_data(70, 0, -15, 0, 0, 0, 500, 500)
+            self.after(15000, lambda: self.process_steps(4))
+        elif step == 4:
+            self.set_and_send_data(-40, 100, 0, -50, 0, 0, 500, 500)
+            self.after(12000, lambda: self.process_steps(5))
+        elif step == 5:
+            self.set_and_send_data(0, 0, 0, -50, 0, 0, 500, 500)
+            self.canvas.itemconfig(self.arrow_wafer_camera, fill='green')
+            self.after(8000, lambda: self.process_steps(6))
+        elif step == 6:
+            self.set_and_send_data(40, -100, 0, -50, 0, 0, 500, 500)
+            self.after(12000, lambda: self.process_steps(7))
+        elif step == 7:
+            self.set_and_send_data(40, -100, 0, 50, 0, 0, 500, 500)
+            self.after(13000, lambda: self.process_steps(8))
+        elif step == 8:
+            self.set_and_send_data(-70, 0, 0, 50, 0, 0, 300, 300)
+            self.after(13000, lambda: self.process_steps(9))
+        elif step == 9:
+            self.set_and_send_data(-70, 0, -15, -50, 0, 0, 500, 500)
+            self.canvas.itemconfig(self.arrow_camera_foup, fill='green')
+            self.after(8000, lambda: self.process_steps(10))
+        elif step == 10:
+            self.set_and_send_data(-70, 0, 25, -50, 0, 0, 500, 500)
+            self.after(8000, lambda: self.process_steps(11))
+        elif step == 11:
+            self.set_and_send_data(-70, 0, 25, 0, 0, 0, 500, 500)
+            self.after(13000, lambda: self.process_steps(12))
+        elif step == 12:
+            self.set_and_send_data(0, 0, 0, 0, 0, 0, 500, 500)
+            self.canvas.itemconfig(self.stick_1, fill='green')
+            self.canvas.itemconfig(self.arrow_camera_foup, fill='gray')
+            self.canvas.itemconfig(self.arrow_wafer_camera, fill='gray')
+            self.canvas.itemconfig(self.arrow_robot_wafer, fill='gray')
+            self.after(9000, lambda: self.process_steps(13))
 
     def toggle_buttons_state(self, state):
         # save_position_button, home_button, run_button의 상태를 변경
@@ -257,7 +324,7 @@ class ScaraRobotGUI(tk.Tk):
             self.run_status.set(1)
             self.run_button.config(text="STOP")
         else:
-            self.run_status.set(0)
+            # self.run_status.set(0)
             self.run_button.config(text="RUN")
 
         # 변경된 run_status 값으로 데이터 전송
@@ -278,8 +345,26 @@ class ScaraRobotGUI(tk.Tk):
     
     def create_home_button(self):
         self.home_button = ttk.Button(self, text="HOME", command=self.send_home_command)
-        self.home_button.place(x=500, y=400, width=350, height=50)
+        self.home_button.place(x=500, y=420, width=350, height=50)
 
+    def create_Clear_button(self):
+        self.Clear_button = ttk.Button(self, text="CLEAR", command=self.ClearPosition)
+        self.Clear_button.place(x=500, y=360, width=350, height=50)
+
+    def create_Exit_button(self):
+        # Close 버튼 생성 및 위치 설정
+        self.Exit_button = ttk.Button(self, text="EXIT", style="Exit.TButton",command=self.send_home_and_close)
+        self.Exit_button.place(x=790, y=50, width=60, height=60)
+
+    def send_home_and_close(self):
+        # Home 명령을 보내는 함수 호출
+        self.send_home_command()
+        # 버튼 비활성화
+        self.Exit_button.config(state='disabled')
+        # 2초 후 애플리케이션 종료
+        self.after(2000, self.destroy)
+
+        
     def send_home_command(self):
     # 각 슬라이더의 값을 설정
         self.j1_slider_value.set(0)
@@ -308,7 +393,12 @@ class ScaraRobotGUI(tk.Tk):
         self.acceleration_slider_value.set(acceleration_val)
         # 변경된 데이터 전송
         self.update_and_send_data()
-    
+        
+    def ClearPosition(self):
+        self.save_status.set(2)
+        self.update_and_send_data()
+        print("Saved Position Clear")
+        self.save_status.set(0)
         
     def savePosition(self):
         # save_status 값을 1로 설정
@@ -337,20 +427,35 @@ class ScaraRobotGUI(tk.Tk):
         print(f"Sending: {data_str}")
         self.serial_port.write(data_str.encode() + b'\n')  # 개행 문자 추가
     
-    # 풉 아두이노와의 통신
-    # def received_and_send_to_FOUP(self, FOUP_num, send_data):
-    #     if self.serial_port1.readline() == "1_0": #첫 번째 FOUP안에 웨이퍼가 없는 경우
-    #         self.message = 1_0
-    #     if self.serial_port1.readline() == "1_1": #첫 번째 FOUP안에 웨이퍼가 있는 경우
-    #         self.message = 1_1
-    #     if self.serial_port1.readline() == "2_0": #두 번째 FOUP안에 웨이퍼가 없는 경우
-    #         self.message = 2_0
-    #     if self.serial_port1.readline() == "2_1": #두 번째 FOUP안에 웨이퍼가 있는 경우
-    #         self.message = 2_1
-    #     if FOUP_num == 1 and send_data == 0: #첫 번째 FOUP안에 웨이퍼를 다 뺀 경우
-    #         self.serial_port1.write("1_0") # FOUP아두이노에게 1(첫 번째FOUP)_0(웨이퍼 유무)를 보냄
-    #     if FOUP_num == 2 and send_data == 1: #두 번째 FOUP안에 웨이퍼를 다 넣은 경우
-    #         self.serial_port1.write("2_1") # FOUP아두이노에게 2(두 번째 FOUP)_1(웨이퍼 유무)를 보냄
+ # 풉 아두이노와의 통신
+    def received_and_send_to_FOUP(self, FOUP_num, send_data, callback=None):
+        # 먼저 아두이노에 명령을 전송
+        if FOUP_num == 1:
+            if send_data == 0:
+                command = "FirstGo"
+            elif send_data == 1:
+                command = "FirstCome"
+        elif FOUP_num == 2:
+            if send_data == 0:
+                command = "SecondCome"
+            elif send_data == 1:
+                command = "SecondGo"
+
+        print(f"Sending command: {command}")
+        self.serial_port1.write(command.encode())
+        self.wait_for_response(callback)
+        
+    def wait_for_response(self, callback=None):
+        # 대기 상태가 아닌 경우 대기
+        while self.serial_port1.in_waiting == 0:
+            time.sleep(0.1)  # CPU 사용을 줄이기 위해 적당한 지연 시간 설정
+
+        response = self.serial_port1.readline().decode().strip()
+        print(f"Received: '{response}'")
+        self.message = response
+        if callback:
+            callback()
+          
 if __name__ == "__main__":
     app = ScaraRobotGUI()
     app.mainloop()
