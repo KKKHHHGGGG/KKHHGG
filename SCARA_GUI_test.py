@@ -4,12 +4,23 @@ from tkinter import font as tkFont  # 폰트 모듈 임포트
 import serial
 import time
 from PIL import Image, ImageTk
+import threading
+
+import numpy as np
+import cv2
+from ultralytics import YOLO
+import random
+import matplotlib.pyplot as plt
 
 class ScaraRobotGUI(tk.Tk):
     def __init__(self):
         super().__init__()
         self.geometry("800x600")
         self.title("SCARA Robot Control")
+        self.init_yolo()
+        self.wafer_state_event = threading.Event()
+        
+
         
         # 시리얼 포트 설정. 적절한 COM 포트로 설정하세요.
         self.serial_port = serial.Serial('COM3', 115200, timeout=1)
@@ -44,7 +55,9 @@ class ScaraRobotGUI(tk.Tk):
         
         self.after_id = None  # after 호출 ID를 저장할 변수
         
+        self.wafer_state = None
 
+        self.foup1 = ttk.Label(self, text="FOUP1", font=self.customFont).place(x=550, y=270)
         
         # 경고등을 그릴 Canvas 생성
         self.canvas = tk.Canvas(self, width=1000, height=800)
@@ -97,6 +110,69 @@ class ScaraRobotGUI(tk.Tk):
         self.create_Exit_button()
         # clear 버튼 추가
         self.create_Clear_button()
+        
+    def init_yolo(self):
+        self.class_list = self.load_class_list(r"C:\Users\taery\coco.txt")
+        self.detection_colors = self.assign_colors(self.class_list)
+        self.model = YOLO(r"C:\Users\taery\best.pt", "v8")
+        self.cap = cv2.VideoCapture(0)
+        if not self.cap.isOpened():
+            print("카메라 실행 불가")
+            exit()
+        self.running = False        
+    def load_class_list(self, file_path):
+        with open(file_path, 'r') as file:
+            data = file.read()
+            return data.split("\n")
+
+    def assign_colors(self, class_list):
+        return [(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)) for _ in class_list]
+    
+    def start_detection_async(self):
+        # Run detection in a separate thread to prevent UI freezing
+        detection_thread = threading.Thread(target=self.start_detection)
+        detection_thread.start()
+
+    def start_detection(self):
+        self.running = True
+        while self.running:
+            time.sleep(0.2)
+            ret, frame = self.cap.read()
+            if not ret:
+                print("Can't receive frame (stream end?). Exiting ...")
+                break
+
+            detect_params = self.model.predict(source=[frame], conf=0.45, save=False)
+            if len(detect_params[0]):
+                self.draw_detections(frame, detect_params[0])
+                classes_detected = [self.class_list[int(box.cls.numpy()[0])] for box in detect_params[0].boxes]
+                if 'detective' in classes_detected:
+                    self.update_message('red')
+                    self.stop_detection()
+                elif 'normal' in classes_detected:
+                    self.update_message('green')
+                    self.stop_detection()
+            cv2.imshow('Wafer Detection', frame)
+            self.wafer_state_event.set()
+
+    def update_message(self, Color):
+        self.canvas.itemconfig(self.Camera_light, fill=Color)
+        self.wafer_state = Color
+
+    def draw_detections(self, frame, detections):
+        for box in detections.boxes:
+            clsID = box.cls.numpy()[0]
+            conf = box.conf.numpy()[0]
+            bb = box.xyxy.numpy()[0]
+            cv2.rectangle(frame, (int(bb[0]), int(bb[1])), (int(bb[2]), int(bb[3])), self.detection_colors[int(clsID)], 3)
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            cv2.putText(frame, f"{self.class_list[int(clsID)]} {conf:.2f}", (int(bb[0]), int(bb[1]) - 10), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
+
+    def stop_detection(self):
+        self.running = False
+        self.cap.release()
+        cv2.destroyAllWindows()
+        print("Detection stopped and resources released.")
         
     def initialize_ui(self):
         # Pillow를 사용하여 이미지 로드 및 크기 조정
@@ -165,6 +241,7 @@ class ScaraRobotGUI(tk.Tk):
                 if self.message == 'FirstComeC':
                     print("received_FirstComeC")    
                     self.canvas.itemconfig(self.FOUP1_light, fill='green')
+                    self.canvas.itemconfig(self.FOUP2_light, fill='green')
                     self.process_steps(0)  # 시작 단계 0에서 프로세스 시작
 
         if self.wafer_processing_button["text"] == "WAFER PROCESSING":
@@ -193,51 +270,111 @@ class ScaraRobotGUI(tk.Tk):
             self.after_id = None
         if step == 0 and self.message == 'FirstComeC':
             time.sleep(1)
-            self.set_and_send_data(70, 0, 0, 0, 0, 0, 500, 500)
-            self.after(8000, lambda: self.process_steps(1))
+            self.set_and_send_data(69, 0, 0, -10, 0, 0, 500, 500)
+            self.after(700, lambda: self.process_steps(1))
         elif step == 1:
-            self.set_and_send_data(70, 0, 25, 75, 0, 0, 300, 300)
+            # self.set_and_send_data(69, 0, 0, -10, 0, 0, 500, 500)
             self.canvas.itemconfig(self.arrow_robot_wafer, fill='green')
-            self.after(17000, lambda: self.process_steps(2))
+            self.after(3000, lambda: self.process_steps(2))
         elif step == 2:
-            self.set_and_send_data(70, 0, -15, 75, 0, 0, 300, 300)
-            self.after(8000, lambda: self.process_steps(3)) 
+            self.set_and_send_data(69, 0, 15, 70, 0, 0, 500, 500)
+            self.after(1500, lambda: self.process_steps(3)) 
         elif step == 3:
-            self.set_and_send_data(70, 0, -15, 0, 0, 0, 500, 500)
-            self.after(15000, lambda: self.process_steps(4))
+            self.set_and_send_data(69, 0, -20, 70, 0, 0, 500, 500)
+            self.after(800, lambda: self.process_steps(4))
         elif step == 4:
-            self.set_and_send_data(-40, 100, 0, -50, 0, 0, 500, 500)
-            self.after(12000, lambda: self.process_steps(5))
+            self.set_and_send_data(69, 0, -20, 20, 0, 0, 1000, 1000)
+            self.received_and_send_to_FOUP(1, 0)
+            self.after(1500, lambda: self.process_steps(5))
         elif step == 5:
-            self.set_and_send_data(0, 0, 0, -50, 0, 0, 500, 500)
+            self.set_and_send_data(24, 0, 100, 20, 0, 0, 300, 300)
             self.canvas.itemconfig(self.arrow_wafer_camera, fill='green')
-            self.after(8000, lambda: self.process_steps(6))
+            self.after(1200, lambda: self.process_steps(7))
         elif step == 6:
-            self.set_and_send_data(40, -100, 0, -50, 0, 0, 500, 500)
-            self.after(12000, lambda: self.process_steps(7))
+            self.start_detection_async()
+            self.check_wafer_state(6)
+            # self.wafer_state_event.wait()  # wafer_state가 설정될 때까지 대기
+            # self.after(1000)
+            # if self.wafer_state == 'red':
+            #     # self.wafer_state_event.clear()
+            #     self.after(1000, lambda: self.process_steps(100))
+            # elif self.wafer_state == 'green':
+            #     # self.wafer_state_event.clear()
+            #     self.after(1000, lambda: self.process_steps(7))
         elif step == 7:
-            self.set_and_send_data(40, -100, 0, 50, 0, 0, 500, 500)
-            self.after(13000, lambda: self.process_steps(8))
+            self.set_and_send_data(24, 0, -40, 20, 0, 0, 1000, 1000)
+            self.after(1500, lambda: self.process_steps(8))
         elif step == 8:
-            self.set_and_send_data(-70, 0, 0, 50, 0, 0, 300, 300)
-            self.after(13000, lambda: self.process_steps(9))
+            self.wafer_state = None
+            self.set_and_send_data(10, -80, -40, 20, 0, 0, 500, 500)
+            self.after(1500, lambda: self.process_steps(9))
         elif step == 9:
-            self.set_and_send_data(-70, 0, -15, -50, 0, 0, 500, 500)
-            self.canvas.itemconfig(self.arrow_camera_foup, fill='green')
-            self.after(8000, lambda: self.process_steps(10))
+            self.set_and_send_data(-72, 0, -20, 20, 0, 0, 300, 300)
+            self.after(1500, lambda: self.process_steps(10))
         elif step == 10:
-            self.set_and_send_data(-70, 0, 25, -50, 0, 0, 500, 500)
-            self.after(8000, lambda: self.process_steps(11))
+            self.set_and_send_data(-72, 0, -20, -80, 0, 0, 1000, 1000)
+            self.after(1200, lambda: self.process_steps(11))
         elif step == 11:
-            self.set_and_send_data(-70, 0, 25, 0, 0, 0, 500, 500)
-            self.after(13000, lambda: self.process_steps(12))
+            self.set_and_send_data(-72, 0, 20, -80, 0, 0, 500, 500)
+            self.canvas.itemconfig(self.arrow_camera_foup, fill='green')
+            self.after(1300, lambda: self.process_steps(12))
         elif step == 12:
+            self.set_and_send_data(-72, 0, 20, 30, 0, 0, 1000, 1000)
+            self.after(1300, lambda: self.process_steps(13))
+        elif step == 13:
+            self.set_and_send_data(-72, 0, -40, 30, 0, 0, 1000, 1000)
+            self.after(500, lambda: self.process_steps(14))
+        elif step == 14:
+            self.set_and_send_data(-40, 50, -40, 30, 0, 0, 500, 500)
+            self.after(1300, lambda: self.process_steps(15))
+        # elif step == 16:
+        #     self.set_and_send_data(-76, 0, 20, 0, 0, 0, 500, 500)
+        #     self.after(13000, lambda: self.process_steps(17))
+        # elif step == 17:
+        #     self.set_and_send_data(-76, 100, -20, 0, 0, 0, 300, 300)
+        #     self.after(13000, lambda: self.process_steps(18))
+        # elif step == 18:
+        #     self.set_and_send_data(0, 0, -20, 0, 0, 0, 500, 500)
+        #     self.after(13000, lambda: self.process_steps(19))
+        elif step == 15:
             self.set_and_send_data(0, 0, 0, 0, 0, 0, 500, 500)
             self.canvas.itemconfig(self.stick_1, fill='green')
             self.canvas.itemconfig(self.arrow_camera_foup, fill='gray')
             self.canvas.itemconfig(self.arrow_wafer_camera, fill='gray')
             self.canvas.itemconfig(self.arrow_robot_wafer, fill='gray')
-            self.after(9000, lambda: self.process_steps(13))
+            self.canvas.itemconfig(self.arrow_camera_trash, fill='gray')
+            self.after(900, lambda: self.process_steps(20))
+        elif step == 20:
+            self.received_and_send_to_FOUP(2, 0)
+            self.after(9000, lambda: self.process_steps(500))
+        elif step == 106:
+            self.set_and_send_data(0, 0, -30, 0, 0, 0, 500, 500)
+            self.after(8000, lambda: self.process_steps(107))
+        elif step == 107:
+            self.set_and_send_data(-40, 20, -30, 0, 0, 0, 300, 300)
+            self.after(1300, lambda: self.process_steps(108))
+        elif step == 108:
+            self.set_and_send_data(-40, 20, 30, 0, 0, 0, 500, 500)
+            self.canvas.itemconfig(self.arrow_camera_trash, fill='green')
+            self.after(5000, lambda: self.process_steps(109))
+        elif step == 109:
+            self.set_and_send_data(-55, 50, 30, 0, 0, 0, 300, 300)
+            self.after(5000, lambda: self.process_steps(110))
+        elif step == 110:
+            self.set_and_send_data(-70, 80, 30, 50, 0, 0, 300, 300)
+            self.after(1300, lambda: self.process_steps(16))
+            
+    def check_wafer_state(self, step):
+        if self.wafer_state_event.is_set():
+            if self.wafer_state == 'red':
+                print("detected")
+                self.after_id = self.after(1000, lambda: self.process_steps(step+100))
+            elif self.wafer_state == 'green':
+                print("normal")
+                self.after_id = self.after(1000, lambda: self.process_steps(step+1))
+        else:
+            self.after_id = self.after(100, lambda: self.check_wafer_state(6))
+
 
     def toggle_buttons_state(self, state):
         # save_position_button, home_button, run_button의 상태를 변경
@@ -457,5 +594,6 @@ class ScaraRobotGUI(tk.Tk):
             callback()
           
 if __name__ == "__main__":
+    # plt.ioff()
     app = ScaraRobotGUI()
     app.mainloop()
