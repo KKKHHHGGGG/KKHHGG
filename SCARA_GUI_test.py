@@ -310,13 +310,14 @@ class ScaraRobotGUI(tk.Tk):
             self.set_and_send_data(70, 0, -20, -40, 0, 0, 1000, 1000)
             self.after(13000, lambda: self.process_steps(5))
         elif step == 5:
-            self.set_and_send_data(24, 0, 100, 20, 0, 0, 300, 300)
+            self.set_and_send_data(24, 0, 100, 20, 0, 0, 500, 500)
             self.canvas.itemconfig(self.arrow_wafer_camera, fill='green')
             self.after(13000, lambda: self.process_steps(6))
         elif step == 6:
             self.start_detection_async()
             self.check_wafer_state(6)
         elif step == 7:
+            self.canvas.itemconfig(self.Camera_light, fill='gray')
             self.set_and_send_data(24, 0, -40, 20, 0, 0, 1000, 1000)
             self.after(7000, lambda: self.process_steps(8))
         elif step == 8:
@@ -335,7 +336,7 @@ class ScaraRobotGUI(tk.Tk):
             self.set_and_send_data(-70, 0, -20, -80, 0, 0, 1000, 1000)
             self.after(13000, lambda: self.process_steps(12))
         elif step == 12:
-            self.set_and_send_data(-70, 0, 20, -80, 0, 0, 300, 300)
+            self.set_and_send_data(-70, 0, 20, -80, 0, 0, 500, 500)
             self.canvas.itemconfig(self.arrow_camera_foup, fill='green')
             self.after(13000, lambda: self.process_steps(13))
         elif step == 13:
@@ -348,13 +349,13 @@ class ScaraRobotGUI(tk.Tk):
             self.set_and_send_data(-40, 50, -60, 30, 0, 0, 500, 500)
             self.after(8000, lambda: self.process_steps(16))
         elif step == 16:
-            self.set_and_send_data(0, 0, 0, 0, 0, 0, 500, 500)
+            self.set_and_send_data(30, 60, -60, -30, 0, 0, 500, 500)
             self.canvas.itemconfig(self.stick_1, fill='green')
             self.canvas.itemconfig(self.arrow_camera_foup, fill='gray')
             self.canvas.itemconfig(self.arrow_wafer_camera, fill='gray')
             self.canvas.itemconfig(self.arrow_robot_wafer, fill='gray')
             self.canvas.itemconfig(self.arrow_camera_trash, fill='gray')
-            self.after(7000, lambda: self.process_steps(20))
+            self.after(10000, lambda: self.process_steps(20))
         elif step == 106:
             self.set_and_send_data(24, 0, -40, 20, 0, 0, 1000, 1000)
             self.after(10000, lambda: self.process_steps(107))
@@ -362,14 +363,14 @@ class ScaraRobotGUI(tk.Tk):
             self.set_and_send_data(-55, 80, -40, -90, 0, 0, 500, 500)
             self.after(16000, lambda: self.process_steps(108))
         elif step == 108:
-            self.set_and_send_data(-55, 80, 35, -90, 0, 0, 300, 300)
+            self.set_and_send_data(-55, 80, 35, -90, 0, 0, 500, 500)
             self.after(8000, lambda: self.process_steps(109))
         elif step == 109:
-            self.set_and_send_data(-55, 80, 35, 10, 0, 0, 300, 300)
+            self.set_and_send_data(-55, 80, 35, 10, 0, 0, 500, 500)
             self.canvas.itemconfig(self.arrow_camera_trash, fill='green')
             self.after(13000, lambda: self.process_steps(110))
         elif step == 110:
-            self.set_and_send_data(-55, 80, 35, 10, 0, 0, 300, 300)
+            self.set_and_send_data(-55, 80, 35, 10, 0, 0, 500, 500)
             self.after(8000, lambda: self.process_steps(16))            
             
         elif step == 20:
@@ -397,7 +398,8 @@ class ScaraRobotGUI(tk.Tk):
             self.start_detection_async()
             self.check_wafer_state(26)
         elif step == 27:
-            # self.received_and_send_to_FOUP(1, 0)            
+            # self.received_and_send_to_FOUP(1, 0) 
+            self.canvas.itemconfig(self.Camera_light, fill='gray')           
             self.set_and_send_data(24, 0, -60, 20, 0, 0, 1000, 1000)
             self.after(7000, lambda: self.process_steps(28))
         elif step == 28:
@@ -442,10 +444,10 @@ class ScaraRobotGUI(tk.Tk):
             self.set_and_send_data(-55, 80, 35, -90, 0, 0, 500, 500)
             self.after(10000, lambda: self.process_steps(128))
         elif step == 128:
-            self.set_and_send_data(-55, 80, 75, -90, 0, 0, 300, 300)
-            self.after(7000, lambda: self.process_steps(129))
+            self.set_and_send_data(-55, 80, 80, -90, 0, 0, 500, 500)
+            self.after(10000, lambda: self.process_steps(129))
         elif step == 129:
-            self.set_and_send_data(-55, 80, 75, 10, 0, 0, 300, 300)
+            self.set_and_send_data(-55, 80, 80, 10, 0, 0, 500, 500)
             self.canvas.itemconfig(self.arrow_camera_trash, fill='green')
             self.after(10000, lambda: self.process_steps(36))
 
@@ -454,6 +456,7 @@ class ScaraRobotGUI(tk.Tk):
             
     def check_wafer_state(self, step):
         if self.wafer_state_event.is_set():
+            self.wafer_state_event.clear()
             if self.wafer_state == 'red':
                 print("detected")
                 self.wafer_state = None
