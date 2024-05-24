@@ -39,11 +39,15 @@ class ScaraRobotGUI(tk.Tk):
         
         # 폰트를 불러옴 
         self.customFont = tkFont.Font(family="Arial", size=14, weight="bold")     
+        self.customFont1 = tkFont.Font(family="Arial", size=10, weight="bold")     
+        self.customFont2 = tkFont.Font(family="Verdana", size=35, weight="bold")     
+        
            
         # 스타일 생성
         style = ttk.Style(self)
         style.configure("Exit.TButton", font=self.customFont, background='red', foreground='red')
-
+        style.configure('Bold.TButton', font=('Helvetica', 10, 'bold'))
+        style.configure('HugeBold.TButton', font=('Helvetica', 14, 'bold'))
         # 슬라이더 변수와 스텝 변수를 저장할 딕셔너리를 초기화합니다.
         self.slider_vars = {}
         
@@ -57,7 +61,8 @@ class ScaraRobotGUI(tk.Tk):
         
         self.wafer_state = None
 
-        self.foup1 = ttk.Label(self, text="FOUP1", font=self.customFont).place(x=550, y=270)
+        self.cap = None  # Initialize cap here      
+        self.running = False  
         
         # 경고등을 그릴 Canvas 생성
         self.canvas = tk.Canvas(self, width=1000, height=800)
@@ -90,7 +95,7 @@ class ScaraRobotGUI(tk.Tk):
         self.initialize_ui()
 
         # RUN/STOP 버튼 생성 및 위치 설정
-        self.run_button = ttk.Button(self, text="RUN", command=self.toggleRunStatus)
+        self.run_button = ttk.Button(self, text="RUN", style="HugeBold.TButton", command=self.toggleRunStatus)
         self.run_button.place(x=700, y=300, width=150, height=50)
         
         # # 텍스트 필드에 값을 입력할 때 슬라이더 값도 업데이트하기 위한 StringVar
@@ -134,6 +139,11 @@ class ScaraRobotGUI(tk.Tk):
         detection_thread.start()
 
     def start_detection(self):
+        self.cap = cv2.VideoCapture(0)  # Initialize VideoCapture here
+        if not self.cap.isOpened():
+            print("Cannot open camera")
+            return
+        
         self.running = True
         while self.running:
             time.sleep(0.2)
@@ -158,6 +168,7 @@ class ScaraRobotGUI(tk.Tk):
     def update_message(self, Color):
         self.canvas.itemconfig(self.Camera_light, fill=Color)
         self.wafer_state = Color
+        self.wafer_state_event.set()
 
     def draw_detections(self, frame, detections):
         for box in detections.boxes:
@@ -170,7 +181,8 @@ class ScaraRobotGUI(tk.Tk):
 
     def stop_detection(self):
         self.running = False
-        self.cap.release()
+        if self.cap:
+            self.cap.release()
         cv2.destroyAllWindows()
         print("Detection stopped and resources released.")
         
@@ -226,9 +238,21 @@ class ScaraRobotGUI(tk.Tk):
         label.place(x=750, y=705)
         label.image = photo  # 이미지 참조 유지
         
+        foup1_text = ttk.Label(self, text="FOUP1", font=self.customFont)
+        foup1_text.place(x=520, y=260)
+        
+        foup2_text = ttk.Label(self, text="FOUP2", font=self.customFont)
+        foup2_text.place(x=645, y=260)
+        
+        camera_text = ttk.Label(self, text="CAMERA", font=self.customFont)
+        camera_text.place(x=760, y=260)
+        
+        MCA = ttk.Label(self, text="M C A", font=self.customFont2)
+        MCA.place(x=160, y=50)
+        
     def create_wafer_processing_button(self):
             # WAFER PROCESSING 버튼 생성 및 클래스 속성으로 저장
-            self.wafer_processing_button = ttk.Button(self, text="WAFER PROCESSING", command=self.create_wafer_processing)
+            self.wafer_processing_button = ttk.Button(self, text="WAFER PROCESSING", style="Bold.TButton", command=self.create_wafer_processing)
             self.wafer_processing_button.place(x=500, y=50, width=150, height=50)
 
     # 웨이퍼 이동 메커니즘 구현
@@ -241,7 +265,7 @@ class ScaraRobotGUI(tk.Tk):
                 if self.message == 'FirstComeC':
                     print("received_FirstComeC")    
                     self.canvas.itemconfig(self.FOUP1_light, fill='green')
-                    self.canvas.itemconfig(self.FOUP2_light, fill='green')
+                    # self.canvas.itemconfig(self.FOUP2_light, fill='green')
                     self.process_steps(0)  # 시작 단계 0에서 프로세스 시작
 
         if self.wafer_processing_button["text"] == "WAFER PROCESSING":
@@ -270,110 +294,177 @@ class ScaraRobotGUI(tk.Tk):
             self.after_id = None
         if step == 0 and self.message == 'FirstComeC':
             time.sleep(1)
-            self.set_and_send_data(69, 0, 0, -10, 0, 0, 500, 500)
-            self.after(700, lambda: self.process_steps(1))
+            self.set_and_send_data(20, 60, 0, -20, 0, 0, 1000, 1000)
+            self.after(7000, lambda: self.process_steps(1))
         elif step == 1:
-            # self.set_and_send_data(69, 0, 0, -10, 0, 0, 500, 500)
+            self.set_and_send_data(70, 0, 0, -20, 0, 0, 1000, 1000)
             self.canvas.itemconfig(self.arrow_robot_wafer, fill='green')
-            self.after(3000, lambda: self.process_steps(2))
+            self.after(7000, lambda: self.process_steps(2))
         elif step == 2:
-            self.set_and_send_data(69, 0, 15, 70, 0, 0, 500, 500)
-            self.after(1500, lambda: self.process_steps(3)) 
+            self.set_and_send_data(70, 0, 20, 70, 0, 0, 1000, 1000)
+            self.after(13000, lambda: self.process_steps(3)) 
         elif step == 3:
-            self.set_and_send_data(69, 0, -20, 70, 0, 0, 500, 500)
-            self.after(800, lambda: self.process_steps(4))
+            self.set_and_send_data(70, 0, -20, 70, 0, 0, 500, 500)
+            self.after(6000, lambda: self.process_steps(4))
         elif step == 4:
-            self.set_and_send_data(69, 0, -20, 20, 0, 0, 1000, 1000)
-            self.received_and_send_to_FOUP(1, 0)
-            self.after(1500, lambda: self.process_steps(5))
+            self.set_and_send_data(70, 0, -20, -40, 0, 0, 1000, 1000)
+            self.after(13000, lambda: self.process_steps(5))
         elif step == 5:
             self.set_and_send_data(24, 0, 100, 20, 0, 0, 300, 300)
             self.canvas.itemconfig(self.arrow_wafer_camera, fill='green')
-            self.after(1200, lambda: self.process_steps(7))
+            self.after(13000, lambda: self.process_steps(6))
         elif step == 6:
             self.start_detection_async()
             self.check_wafer_state(6)
-            # self.wafer_state_event.wait()  # wafer_state가 설정될 때까지 대기
-            # self.after(1000)
-            # if self.wafer_state == 'red':
-            #     # self.wafer_state_event.clear()
-            #     self.after(1000, lambda: self.process_steps(100))
-            # elif self.wafer_state == 'green':
-            #     # self.wafer_state_event.clear()
-            #     self.after(1000, lambda: self.process_steps(7))
         elif step == 7:
             self.set_and_send_data(24, 0, -40, 20, 0, 0, 1000, 1000)
-            self.after(1500, lambda: self.process_steps(8))
+            self.after(7000, lambda: self.process_steps(8))
         elif step == 8:
-            self.wafer_state = None
-            self.set_and_send_data(10, -80, -40, 20, 0, 0, 500, 500)
-            self.after(1500, lambda: self.process_steps(9))
+            # self.received_and_send_to_FOUP(2, 0)
+            self.set_and_send_data(24, -80, -60, 20, 0, 0, 500, 500)
+            self.after(7000, lambda: self.process_steps(9))
         elif step == 9:
-            self.set_and_send_data(-72, 0, -20, 20, 0, 0, 300, 300)
-            self.after(1500, lambda: self.process_steps(10))
+            self.canvas.itemconfig(self.FOUP2_light, fill='green')
+            # self.wafer_state = None
+            self.set_and_send_data(-30, -80, -60, 20, 0, 0, 500, 500)
+            self.after(7000, lambda: self.process_steps(10))
         elif step == 10:
-            self.set_and_send_data(-72, 0, -20, -80, 0, 0, 1000, 1000)
-            self.after(1200, lambda: self.process_steps(11))
+            self.set_and_send_data(-70, 0, -60, 20, 0, 0, 500, 500)
+            self.after(10000, lambda: self.process_steps(11))
         elif step == 11:
-            self.set_and_send_data(-72, 0, 20, -80, 0, 0, 500, 500)
-            self.canvas.itemconfig(self.arrow_camera_foup, fill='green')
-            self.after(1300, lambda: self.process_steps(12))
+            self.set_and_send_data(-70, 0, -20, -80, 0, 0, 1000, 1000)
+            self.after(13000, lambda: self.process_steps(12))
         elif step == 12:
-            self.set_and_send_data(-72, 0, 20, 30, 0, 0, 1000, 1000)
-            self.after(1300, lambda: self.process_steps(13))
+            self.set_and_send_data(-70, 0, 20, -80, 0, 0, 300, 300)
+            self.canvas.itemconfig(self.arrow_camera_foup, fill='green')
+            self.after(13000, lambda: self.process_steps(13))
         elif step == 13:
-            self.set_and_send_data(-72, 0, -40, 30, 0, 0, 1000, 1000)
-            self.after(500, lambda: self.process_steps(14))
+            self.set_and_send_data(-70, 0, 20, 40, 0, 0, 1000, 1000)
+            self.after(13000, lambda: self.process_steps(14))
         elif step == 14:
-            self.set_and_send_data(-40, 50, -40, 30, 0, 0, 500, 500)
-            self.after(1300, lambda: self.process_steps(15))
-        # elif step == 16:
-        #     self.set_and_send_data(-76, 0, 20, 0, 0, 0, 500, 500)
-        #     self.after(13000, lambda: self.process_steps(17))
-        # elif step == 17:
-        #     self.set_and_send_data(-76, 100, -20, 0, 0, 0, 300, 300)
-        #     self.after(13000, lambda: self.process_steps(18))
-        # elif step == 18:
-        #     self.set_and_send_data(0, 0, -20, 0, 0, 0, 500, 500)
-        #     self.after(13000, lambda: self.process_steps(19))
+            self.set_and_send_data(-70, 0, -60, 40, 0, 0, 500, 500)
+            self.after(9000, lambda: self.process_steps(15))
         elif step == 15:
+            self.set_and_send_data(-40, 50, -60, 30, 0, 0, 500, 500)
+            self.after(8000, lambda: self.process_steps(16))
+        elif step == 16:
             self.set_and_send_data(0, 0, 0, 0, 0, 0, 500, 500)
             self.canvas.itemconfig(self.stick_1, fill='green')
             self.canvas.itemconfig(self.arrow_camera_foup, fill='gray')
             self.canvas.itemconfig(self.arrow_wafer_camera, fill='gray')
             self.canvas.itemconfig(self.arrow_robot_wafer, fill='gray')
             self.canvas.itemconfig(self.arrow_camera_trash, fill='gray')
-            self.after(900, lambda: self.process_steps(20))
-        elif step == 20:
-            self.received_and_send_to_FOUP(2, 0)
-            self.after(9000, lambda: self.process_steps(500))
+            self.after(7000, lambda: self.process_steps(20))
         elif step == 106:
-            self.set_and_send_data(0, 0, -30, 0, 0, 0, 500, 500)
-            self.after(8000, lambda: self.process_steps(107))
+            self.set_and_send_data(24, 0, -40, 20, 0, 0, 1000, 1000)
+            self.after(10000, lambda: self.process_steps(107))
         elif step == 107:
-            self.set_and_send_data(-40, 20, -30, 0, 0, 0, 300, 300)
-            self.after(1300, lambda: self.process_steps(108))
+            self.set_and_send_data(-55, 80, -40, -90, 0, 0, 500, 500)
+            self.after(16000, lambda: self.process_steps(108))
         elif step == 108:
-            self.set_and_send_data(-40, 20, 30, 0, 0, 0, 500, 500)
-            self.canvas.itemconfig(self.arrow_camera_trash, fill='green')
-            self.after(5000, lambda: self.process_steps(109))
+            self.set_and_send_data(-55, 80, 35, -90, 0, 0, 300, 300)
+            self.after(8000, lambda: self.process_steps(109))
         elif step == 109:
-            self.set_and_send_data(-55, 50, 30, 0, 0, 0, 300, 300)
-            self.after(5000, lambda: self.process_steps(110))
+            self.set_and_send_data(-55, 80, 35, 10, 0, 0, 300, 300)
+            self.canvas.itemconfig(self.arrow_camera_trash, fill='green')
+            self.after(13000, lambda: self.process_steps(110))
         elif step == 110:
-            self.set_and_send_data(-70, 80, 30, 50, 0, 0, 300, 300)
-            self.after(1300, lambda: self.process_steps(16))
+            self.set_and_send_data(-55, 80, 35, 10, 0, 0, 300, 300)
+            self.after(8000, lambda: self.process_steps(16))            
+            
+        elif step == 20:
+            self.set_and_send_data(30, 60, 0, -30, 0, 0, 1000, 1000)
+            self.canvas.itemconfig(self.arrow_robot_wafer, fill='green')
+            self.after(7000, lambda: self.process_steps(21))
+        elif step == 21:
+            self.set_and_send_data(70, 0, 60, -30, 0, 0, 1000, 1000)
+            self.after(9000, lambda: self.process_steps(22)) 
+        elif step == 22:
+            self.set_and_send_data(70, 0, 60, 70, 0, 0, 1000, 1000)
+            self.after(13000, lambda: self.process_steps(23)) 
+        elif step == 23:
+            self.set_and_send_data(70, 0, 20, 70, 0, 0, 500, 500)
+            self.after(6000, lambda: self.process_steps(24))
+        elif step == 24:
+            self.set_and_send_data(70, 0, 20, -40, 0, 0, 1000, 1000)
+            self.after(13000, lambda: self.process_steps(25))
+        elif step == 25:
+            self.set_and_send_data(24, 0, 100, 20, 0, 0, 500, 500)
+            self.canvas.itemconfig(self.FOUP1_light, fill='gray')
+            self.canvas.itemconfig(self.arrow_wafer_camera, fill='green')
+            self.after(15000, lambda: self.process_steps(26))
+        elif step == 26:
+            self.start_detection_async()
+            self.check_wafer_state(26)
+        elif step == 27:
+            # self.received_and_send_to_FOUP(1, 0)            
+            self.set_and_send_data(24, 0, -60, 20, 0, 0, 1000, 1000)
+            self.after(7000, lambda: self.process_steps(28))
+        elif step == 28:
+            self.wafer_state = None
+            self.set_and_send_data(24, -80, -60, 20, 0, 0, 500, 500)
+            self.after(7000, lambda: self.process_steps(29))
+        elif step == 29:
+            self.wafer_state = None
+            self.set_and_send_data(10, -80, -60, 20, 0, 0, 500, 500)
+            self.after(7000, lambda: self.process_steps(30))
+        elif step == 30:
+            self.set_and_send_data(-69, 0, -60, 20, 0, 0, 500, 500)
+            self.after(13000, lambda: self.process_steps(31))
+        elif step == 31:
+            self.set_and_send_data(-69, 0, 20, -80, 0, 0, 1000, 1000)
+            self.after(13000, lambda: self.process_steps(32))
+        elif step == 32:
+            self.set_and_send_data(-69, 0, 60, -80, 0, 0, 300, 300)
+            self.canvas.itemconfig(self.arrow_camera_foup, fill='green')
+            self.after(13000, lambda: self.process_steps(33))
+        elif step == 33:
+            self.set_and_send_data(-69, 0, 60, 40, 0, 0, 1000, 1000)
+            self.after(13000, lambda: self.process_steps(34))
+        elif step == 34:
+            self.set_and_send_data(-69, 0, -60, 40, 0, 0, 500, 500)
+            self.after(6000, lambda: self.process_steps(35))
+        elif step == 35:
+            self.set_and_send_data(-40, 50, -60, 30, 0, 0, 500, 500)
+            self.after(8000, lambda: self.process_steps(36))
+        elif step == 36:
+            self.set_and_send_data(0, 0, 0, 0, 0, 0, 500, 500)
+            self.canvas.itemconfig(self.stick_2, fill='green')
+            self.canvas.itemconfig(self.arrow_camera_foup, fill='gray')
+            self.canvas.itemconfig(self.arrow_wafer_camera, fill='gray')
+            self.canvas.itemconfig(self.arrow_robot_wafer, fill='gray')
+            self.canvas.itemconfig(self.arrow_camera_trash, fill='gray')
+            self.after(9000, lambda: self.process_steps(40))
+        elif step == 126:
+            self.set_and_send_data(-55, 80, 35, -50, 0, 0, 500, 500)
+            self.after(10000, lambda: self.process_steps(127))
+        elif step == 127:
+            self.set_and_send_data(-55, 80, 35, -90, 0, 0, 500, 500)
+            self.after(10000, lambda: self.process_steps(128))
+        elif step == 128:
+            self.set_and_send_data(-55, 80, 75, -90, 0, 0, 300, 300)
+            self.after(7000, lambda: self.process_steps(129))
+        elif step == 129:
+            self.set_and_send_data(-55, 80, 75, 10, 0, 0, 300, 300)
+            self.canvas.itemconfig(self.arrow_camera_trash, fill='green')
+            self.after(10000, lambda: self.process_steps(36))
+
+
+
             
     def check_wafer_state(self, step):
         if self.wafer_state_event.is_set():
             if self.wafer_state == 'red':
                 print("detected")
+                self.wafer_state = None
                 self.after_id = self.after(1000, lambda: self.process_steps(step+100))
+                
             elif self.wafer_state == 'green':
                 print("normal")
+                self.wafer_state = None
                 self.after_id = self.after(1000, lambda: self.process_steps(step+1))
         else:
-            self.after_id = self.after(100, lambda: self.check_wafer_state(6))
+            self.after_id = self.after(100, lambda: self.check_wafer_state(step))
 
 
     def toggle_buttons_state(self, state):
@@ -381,6 +472,9 @@ class ScaraRobotGUI(tk.Tk):
         self.save_position_button.config(state=state)
         self.home_button.config(state=state)
         self.run_button.config(state=state)
+        self.Clear_button.config(state=state)
+        self.minus_button.config(state=state)
+        self.plus_button.config(state=state)
 
                     
     def create_widgets(self):
@@ -416,14 +510,15 @@ class ScaraRobotGUI(tk.Tk):
         step_entry.place(x=x+110, y=y+40)
 
         # "-" 버튼 위치 설정
-        ttk.Button(self, text="-", command=lambda: self.adjust_slider(slider_var, step_var.get(), -1)).place(x=x, y=y+40, width=50, height=25)
-
+        self.minus_button = ttk.Button(self, text="-", style="HugeBold.TButton", command=lambda: self.adjust_slider(slider_var, step_var.get(), -1))
+        self.minus_button.place(x=x, y=y+40, width=50, height=25)
         # "+" 버튼 위치 설정
-        ttk.Button(self, text="+", command=lambda: self.adjust_slider(slider_var, step_var.get(), 1)).place(x=x+245, y=y+40, width=50, height=25)
-
+        self.plus_button = ttk.Button(self, text="+", style="HugeBold.TButton", command=lambda: self.adjust_slider(slider_var, step_var.get(), 1))
+        self.plus_button.place(x=x+245, y=y+40, width=50, height=25)
+        
     def create_save_position_button(self):
         # SAVE POSITION 버튼 생성 및 클래스 속성으로 저장
-        self.save_position_button = ttk.Button(self, text="SAVE POSITION", command=self.savePosition)
+        self.save_position_button = ttk.Button(self, text="SAVE", style="HugeBold.TButton", command=self.savePosition)
         self.save_position_button.place(x=500, y=300, width=150, height=50)
 
     # def create_run_button(self):
@@ -432,13 +527,13 @@ class ScaraRobotGUI(tk.Tk):
     
     def create_sliders(self):
         # 속도 슬라이더 생성
-        ttk.Label(self, text="SPEED").place(x=555, y=480)
+        ttk.Label(self, text="SPEED", font=self.customFont1).place(x=550, y=480)
         ttk.Scale(self, from_=0, to=1000, orient="horizontal", variable=self.speed_slider_value, command=lambda event=None: self.update_and_send_data(), length=150).place(x=500, y=500)
         speed_entry = ttk.Entry(self, textvariable=self.speed_slider_value, width=3)
         speed_entry.place(x=560, y=530)
 
         # 가속도 슬라이더 생성
-        ttk.Label(self, text="ACCELETION").place(x=740, y=480)
+        ttk.Label(self, text="ACCELETION", font=self.customFont1).place(x=735, y=480)
         ttk.Scale(self, from_=0, to=1000, orient="horizontal", variable=self.acceleration_slider_value, command=lambda event=None: self.update_and_send_data(), length=150).place(x=700, y=500)
         acceleration_entry = ttk.Entry(self, textvariable=self.acceleration_slider_value, width=3)
         acceleration_entry.place(x=760, y=530)
@@ -481,11 +576,11 @@ class ScaraRobotGUI(tk.Tk):
         self.update_and_send_data()
     
     def create_home_button(self):
-        self.home_button = ttk.Button(self, text="HOME", command=self.send_home_command)
+        self.home_button = ttk.Button(self, text="HOME", style="HugeBold.TButton", command=self.send_home_command)
         self.home_button.place(x=500, y=420, width=350, height=50)
 
     def create_Clear_button(self):
-        self.Clear_button = ttk.Button(self, text="CLEAR", command=self.ClearPosition)
+        self.Clear_button = ttk.Button(self, text="CLEAR", style="HugeBold.TButton", command=self.ClearPosition)
         self.Clear_button.place(x=500, y=360, width=350, height=50)
 
     def create_Exit_button(self):
