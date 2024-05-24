@@ -295,7 +295,7 @@ class ScaraRobotGUI(tk.Tk):
         if step == 0 and self.message == 'FirstComeC':
             time.sleep(1)
             self.set_and_send_data(20, 60, 0, -20, 0, 0, 1000, 1000)
-            self.after(7000, lambda: self.process_steps(1))
+            self.after(8000, lambda: self.process_steps(1))
         elif step == 1:
             self.set_and_send_data(70, 0, 0, -20, 0, 0, 1000, 1000)
             self.canvas.itemconfig(self.arrow_robot_wafer, fill='green')
@@ -316,12 +316,14 @@ class ScaraRobotGUI(tk.Tk):
         elif step == 6:
             self.start_detection_async()
             self.check_wafer_state(6)
+            
+            
         elif step == 7:
             self.canvas.itemconfig(self.Camera_light, fill='gray')
             self.set_and_send_data(24, 0, -40, 20, 0, 0, 1000, 1000)
             self.after(7000, lambda: self.process_steps(8))
         elif step == 8:
-            # self.received_and_send_to_FOUP(2, 0)
+            self.received_and_send_to_FOUP(2, 0)
             self.set_and_send_data(24, -80, -60, 20, 0, 0, 500, 500)
             self.after(7000, lambda: self.process_steps(9))
         elif step == 9:
@@ -356,7 +358,10 @@ class ScaraRobotGUI(tk.Tk):
             self.canvas.itemconfig(self.arrow_robot_wafer, fill='gray')
             self.canvas.itemconfig(self.arrow_camera_trash, fill='gray')
             self.after(10000, lambda: self.process_steps(20))
+            
+            
         elif step == 106:
+            self.canvas.itemconfig(self.Camera_light, fill='gray')
             self.set_and_send_data(24, 0, -40, 20, 0, 0, 1000, 1000)
             self.after(10000, lambda: self.process_steps(107))
         elif step == 107:
@@ -372,6 +377,7 @@ class ScaraRobotGUI(tk.Tk):
         elif step == 110:
             self.set_and_send_data(-55, 80, 35, 10, 0, 0, 500, 500)
             self.after(8000, lambda: self.process_steps(16))            
+            
             
         elif step == 20:
             self.set_and_send_data(30, 60, 0, -30, 0, 0, 1000, 1000)
@@ -391,14 +397,16 @@ class ScaraRobotGUI(tk.Tk):
             self.after(13000, lambda: self.process_steps(25))
         elif step == 25:
             self.set_and_send_data(24, 0, 100, 20, 0, 0, 500, 500)
-            self.canvas.itemconfig(self.FOUP1_light, fill='gray')
+            # self.canvas.itemconfig(self.FOUP1_light, fill='gray')
             self.canvas.itemconfig(self.arrow_wafer_camera, fill='green')
             self.after(15000, lambda: self.process_steps(26))
         elif step == 26:
             self.start_detection_async()
             self.check_wafer_state(26)
+            
+            
         elif step == 27:
-            # self.received_and_send_to_FOUP(1, 0) 
+            
             self.canvas.itemconfig(self.Camera_light, fill='gray')           
             self.set_and_send_data(24, 0, -60, 20, 0, 0, 1000, 1000)
             self.after(7000, lambda: self.process_steps(28))
@@ -411,35 +419,38 @@ class ScaraRobotGUI(tk.Tk):
             self.set_and_send_data(10, -80, -60, 20, 0, 0, 500, 500)
             self.after(7000, lambda: self.process_steps(30))
         elif step == 30:
-            self.set_and_send_data(-69, 0, -60, 20, 0, 0, 500, 500)
+            self.set_and_send_data(-70, 0, -60, 20, 0, 0, 500, 500)
             self.after(13000, lambda: self.process_steps(31))
         elif step == 31:
-            self.set_and_send_data(-69, 0, 20, -80, 0, 0, 1000, 1000)
+            self.set_and_send_data(-70, 0, 20, -80, 0, 0, 1000, 1000)
             self.after(13000, lambda: self.process_steps(32))
         elif step == 32:
-            self.set_and_send_data(-69, 0, 60, -80, 0, 0, 300, 300)
+            self.set_and_send_data(-70, 0, 60, -80, 0, 0, 300, 300)
             self.canvas.itemconfig(self.arrow_camera_foup, fill='green')
             self.after(13000, lambda: self.process_steps(33))
         elif step == 33:
-            self.set_and_send_data(-69, 0, 60, 40, 0, 0, 1000, 1000)
+            self.set_and_send_data(-70, 0, 60, 40, 0, 0, 1000, 1000)
             self.after(13000, lambda: self.process_steps(34))
         elif step == 34:
-            self.set_and_send_data(-69, 0, -60, 40, 0, 0, 500, 500)
+            self.set_and_send_data(-70, 0, -60, 40, 0, 0, 500, 500)
             self.after(6000, lambda: self.process_steps(35))
         elif step == 35:
             self.set_and_send_data(-40, 50, -60, 30, 0, 0, 500, 500)
             self.after(8000, lambda: self.process_steps(36))
         elif step == 36:
-            self.set_and_send_data(0, 0, 0, 0, 0, 0, 500, 500)
+            self.set_and_send_data(30, 60, 0, -30, 0, 0, 1000, 1000)
             self.canvas.itemconfig(self.stick_2, fill='green')
             self.canvas.itemconfig(self.arrow_camera_foup, fill='gray')
             self.canvas.itemconfig(self.arrow_wafer_camera, fill='gray')
             self.canvas.itemconfig(self.arrow_robot_wafer, fill='gray')
             self.canvas.itemconfig(self.arrow_camera_trash, fill='gray')
-            self.after(9000, lambda: self.process_steps(40))
+            self.after(9000, lambda: self.process_steps(41))
+            
+            
         elif step == 126:
-            self.set_and_send_data(-55, 80, 35, -50, 0, 0, 500, 500)
-            self.after(10000, lambda: self.process_steps(127))
+            self.canvas.itemconfig(self.Camera_light, fill='gray')
+            self.set_and_send_data(-55, 80, 35, -90, 0, 0, 500, 500)
+            self.after(10000, lambda: self.process_steps(129))
         elif step == 127:
             self.set_and_send_data(-55, 80, 35, -90, 0, 0, 500, 500)
             self.after(10000, lambda: self.process_steps(128))
@@ -451,7 +462,91 @@ class ScaraRobotGUI(tk.Tk):
             self.canvas.itemconfig(self.arrow_camera_trash, fill='green')
             self.after(10000, lambda: self.process_steps(36))
 
+        elif step == 40:
+            self.set_and_send_data(30, 60, 0, -30, 0, 0, 1000, 1000)
+            self.canvas.itemconfig(self.arrow_robot_wafer, fill='green')
+            self.after(7000, lambda: self.process_steps(41))
+        elif step == 41:
+            self.set_and_send_data(70, 0, 110, -30, 0, 0, 500, 500)
+            self.canvas.itemconfig(self.arrow_robot_wafer, fill='green')
+            self.after(9000, lambda: self.process_steps(42)) 
+        elif step == 42:
+            self.set_and_send_data(70, 0, 110, 70, 0, 0, 1000, 1000)
+            self.after(13000, lambda: self.process_steps(43)) 
+        elif step == 43:
+            self.set_and_send_data(70, 0, 70, 70, 0, 0, 500, 500)
+            self.after(6000, lambda: self.process_steps(44))
+        elif step == 44:
+            self.set_and_send_data(70, 0, 70, -30, 0, 0, 1000, 1000)
+            self.after(15000, lambda: self.process_steps(45))
+        elif step == 45:
+            self.set_and_send_data(24, 0, 100, 20, 0, 0, 500, 500)
+            self.canvas.itemconfig(self.FOUP1_light, fill='gray')
+            self.canvas.itemconfig(self.arrow_wafer_camera, fill='green')
+            self.after(13000, lambda: self.process_steps(46))
+        elif step == 46:
+            self.start_detection_async()
+            self.check_wafer_state(46)
 
+        elif step == 47:
+            self.canvas.itemconfig(self.Camera_light, fill='gray')
+            self.set_and_send_data(24, 0, -40, 20, 0, 0, 1000, 1000)
+            self.after(7000, lambda: self.process_steps(48))
+        elif step == 48:
+            self.received_and_send_to_FOUP(1, 0) 
+            self.set_and_send_data(24, -80, -60, 20, 0, 0, 500, 500)
+            self.after(7000, lambda: self.process_steps(49))
+        elif step == 49:
+            self.canvas.itemconfig(self.FOUP1_light, fill='gray')
+            # self.wafer_state = None
+            self.set_and_send_data(-30, -80, -60, 20, 0, 0, 500, 500)
+            self.after(7000, lambda: self.process_steps(50))
+        elif step == 50:
+            self.set_and_send_data(-70, 0, -60, 20, 0, 0, 500, 500)
+            self.after(10000, lambda: self.process_steps(51))
+        elif step == 51:
+            self.set_and_send_data(-70, 0, 70, -80, 0, 0, 1000, 1000)
+            self.after(13000, lambda: self.process_steps(52))
+        elif step == 52:
+            self.set_and_send_data(-70, 0, 115, -80, 0, 0, 500, 500)
+            self.canvas.itemconfig(self.arrow_camera_foup, fill='green')
+            self.after(13000, lambda: self.process_steps(53))
+        elif step == 53:
+            self.set_and_send_data(-70, 0, 115, 40, 0, 0, 1000, 1000)
+            self.after(13000, lambda: self.process_steps(54))
+        elif step == 54:
+            self.set_and_send_data(-70, 0, -60, 40, 0, 0, 1000, 1000)
+            self.after(9000, lambda: self.process_steps(55))
+        elif step == 55:
+            self.set_and_send_data(-40, 50, -60, 30, 0, 0, 500, 500)
+            self.after(8000, lambda: self.process_steps(56))
+        elif step == 56:
+            self.set_and_send_data(0, 0, 0, 0, 0, 0, 500, 500)
+            self.canvas.itemconfig(self.stick_3, fill='green')
+            self.canvas.itemconfig(self.arrow_camera_foup, fill='gray')
+            self.canvas.itemconfig(self.arrow_wafer_camera, fill='gray')
+            self.canvas.itemconfig(self.arrow_robot_wafer, fill='gray')
+            self.canvas.itemconfig(self.arrow_camera_trash, fill='gray')
+            self.received_and_send_to_FOUP(2, 1)
+            self.canvas.itemconfig(self.FOUP2_light, fill='gray')
+            self.after(10000, lambda: self.process_steps(60))
+
+        elif step == 146:
+            self.canvas.itemconfig(self.Camera_light, fill='gray')
+            self.received_and_send_to_FOUP(1, 0) 
+            self.set_and_send_data(-55, 80, 85, -90, 0, 0, 500, 500)
+            self.after(10000, lambda: self.process_steps(148))
+        elif step == 147:
+            self.set_and_send_data(-55, 80, 85, -90, 0, 0, 500, 500)
+            self.after(10000, lambda: self.process_steps(148))
+        elif step == 148:
+            self.set_and_send_data(-55, 80, 120, -90, 0, 0, 500, 500)
+            self.after(10000, lambda: self.process_steps(149))
+        elif step == 149:
+            self.set_and_send_data(-55, 80, 120, 10, 0, 0, 500, 500)
+            
+            self.canvas.itemconfig(self.arrow_camera_trash, fill='green')
+            self.after(10000, lambda: self.process_steps(56))
 
             
     def check_wafer_state(self, step):
